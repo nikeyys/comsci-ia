@@ -37,13 +37,15 @@ class loginWindow(login.Ui_MainWindow, QtWidgets.QMainWindow):
         # line edits
         # applicant
         self.line_applicantUsername.textChanged.connect(self.printApplicantUsername)
-        self.line_managerUsername.textChanged.connect(self.printManagerUsername)
         self.line_applicantUsername.returnPressed.connect(self.enterPressed)
         self.line_applicantPassword.textChanged.connect(self.printPassword)
+        self.line_applicantPassword.returnPressed.connect(self.loginApplicant)
 
         # manager
+        self.line_managerUsername.textChanged.connect(self.printManagerUsername)
         self.line_managerUsername.returnPressed.connect(self.enterPressed)
         self.line_managerPassword.textChanged.connect(self.printPassword)
+        self.line_managerPassword.returnPressed.connect(self.loginManager)
 
         # calling other windows
         self.applicantDashboard = applicantDashboardWindow()
@@ -352,6 +354,7 @@ class adminManagerProfilesWindow(adminManagerProfiles.Ui_MainWindow, QtWidgets.Q
         # buttons
         self.btn_backToDashboard.clicked.connect(self.backToDashboard)
         self.btn_registerManager.clicked.connect(self.adminRegisterManager)
+        # self.btn_removeManager.clicked.connect(self.removeManager)
 
         # line edits
         self.line_searchBar.textChanged.connect(self.managerProfiles)
@@ -364,11 +367,11 @@ class adminManagerProfilesWindow(adminManagerProfiles.Ui_MainWindow, QtWidgets.Q
 
     def managerProfiles(self, keyword=None):
         keyword = self.line_searchBar.text()
-        header = ['Manager ID', 'Manager Name']
+        header = ['Manager ID', 'Manager Name', 'Manager Username']
         data = getManagerProfiles(keyword)
 
         if not data:
-            data = ['', '']
+            data = ['', '', '']
 
         self.managerProfilesTable = tableModel(self, data, header)
         self.tbl_managerProfiles.setModel(self.managerProfilesTable)
@@ -393,7 +396,7 @@ class adminRegisterManagerWindow(adminRegisterManager.Ui_MainWindow, QtWidgets.Q
         # slots and signals
 
         # buttons
-        # self.btn_registerManager.clicked.connect(self.registerManager)
+        self.btn_registerManager.clicked.connect(self.registerNewManager)
         self.btn_cancel.clicked.connect(self.cancel)
 
         # text edits
@@ -423,6 +426,27 @@ class adminRegisterManagerWindow(adminRegisterManager.Ui_MainWindow, QtWidgets.Q
 
     def printPassword(self):
         self.line_password.setText(self.line_password.text())
+
+    def registerNewManager(self):
+        firstName = self.line_firstName.text()
+        surname = self.line_surname.text()
+        username = self.line_username.text()
+        password = self.line_password.text()
+
+        if firstName and surname and username and password:
+            if messageBox('Confirmation', 'Are you sure you want to register this manager?', 'question', True) == \
+                    QtWidgets.QMessageBox.Ok:
+                managers.add(firstName, surname, username, password)
+                messageBox('Success', 'Manager successfully registered!', 'information', False)
+                if self.adminManagerProfiles is None:
+                    self.adminManagerProfiles = adminManagerProfilesWindow()
+                self.close()
+                self.adminManagerProfiles.setFocus()
+            else:
+                self.setFocus()
+        else:
+            messageBox('Error', 'Please fill in all the fields!', 'critical', False)
+            self.setFocus()
 
     def cancel(self):
         if messageBox('Confirmation', 'Are you sure you want to exit?', 'question', True) == QtWidgets.QMessageBox.Ok:

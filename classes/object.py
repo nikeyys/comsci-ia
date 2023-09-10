@@ -61,12 +61,19 @@ def getTeamMembers(keyword):
 def getManagerProfiles(keyword):
     with ConnectionPool() as cursor:
         cursor.execute('''
-            SELECT "managerID", CONCAT("managerFirstName", ' ', "managerSurname") AS "managerName"
+            SELECT "managerID", CONCAT("managerFirstName", ' ', "managerSurname") AS "managerName", "managerUsername"
             FROM manager
             WHERE manager."managerFirstName" ILIKE %s OR manager."managerSurname" ILIKE %s
             ''', (f'%{keyword}%', f'%{keyword}%'))
         return cursor.fetchall()
 
+
+class managers:
+    @staticmethod
+    def add(firstName, lastName, username, password):
+        with ConnectionPool() as cursor:
+            cursor.execute('''INSERT INTO manager("managerFirstName", "managerSurname", "managerUsername", 
+            "managerPassword") VALUES(%s,%s,%s,%s)''', (firstName, lastName, username, password))
 
 
 if __name__ == '__main__':
