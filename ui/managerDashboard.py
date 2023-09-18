@@ -145,9 +145,14 @@ class Ui_MainWindow(object):
         self.label_memberStats.setFont(font)
         self.label_memberStats.setObjectName("label_memberStats")
         self.vLayout_memberStats.addWidget(self.label_memberStats)
-        self.tbl_memberStats = QtWidgets.QTableView(self.dashboardContent)
-        self.tbl_memberStats.setObjectName("tbl_memberStats")
-        self.vLayout_memberStats.addWidget(self.tbl_memberStats)
+        self.chart_memberStats = QtWidgets.QWidget(self.dashboardContent)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.chart_memberStats.sizePolicy().hasHeightForWidth())
+        self.chart_memberStats.setSizePolicy(sizePolicy)
+        self.chart_memberStats.setObjectName("chart_memberStats")
+        self.vLayout_memberStats.addWidget(self.chart_memberStats)
         self.gridLayout.addLayout(self.vLayout_memberStats, 1, 1, 1, 1)
         self.vLayout_recentApplications = QtWidgets.QVBoxLayout()
         self.vLayout_recentApplications.setObjectName("vLayout_recentApplications")
@@ -173,7 +178,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Manager Dashboard"))
         self.label_managerDashboard.setText(_translate("MainWindow", "Manager Dashboard"))
         self.btn_pendingApps.setText(_translate("MainWindow", "Pending Applications"))
         self.btn_managerProfile.setText(_translate("MainWindow", "View Manager Profile"))

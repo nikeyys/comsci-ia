@@ -1,6 +1,10 @@
 import sys
-from PyQt5 import QtWidgets
+
+from PyQt5 import QtWidgets, QtCore, QtChart
 from PyQt5.QtWidgets import QApplication, QMainWindow
+from PyQt5.QtChart import QChart, QBarSeries, QBarSet, QBarCategoryAxis, QChartView, QCategoryAxis
+from PyQt5.QtGui import QPainter
+from PyQt5.QtCore import Qt
 
 import keyboard
 import re
@@ -83,7 +87,7 @@ class loginWindow(login.Ui_MainWindow, QtWidgets.QMainWindow):
         loginType = 'applicant'
         usernameEntered = self.line_applicantUsername.text()
         passwordEntered = self.line_applicantPassword.text()
-        if verifyLogin(usernameEntered, passwordEntered, loginType):
+        if general.verifyLogin(usernameEntered, passwordEntered, loginType):
             messageBox('Success', 'Logged in Successfully!', 'information')
             print('Login Successfully!')
             self.applicantDashboard.show()
@@ -98,7 +102,7 @@ class loginWindow(login.Ui_MainWindow, QtWidgets.QMainWindow):
         loginType = 'manager'
         usernameEntered = self.line_managerUsername.text()
         passwordEntered = self.line_managerPassword.text()
-        if verifyLogin(usernameEntered, passwordEntered, loginType):
+        if general.verifyLogin(usernameEntered, passwordEntered, loginType):
             messageBox('Success', 'Logged in Successfully!', 'information')
             print('Login Successfully!')
             self.managerDashboard.show()
@@ -137,7 +141,7 @@ class applicantDashboardWindow(applicantDashboard.Ui_MainWindow, QtWidgets.QMain
 
     def previousApplications(self):
         header = ['Application ID', 'Date', 'Team', 'Status']
-        data = getPreviousApplications()
+        data = managers.getPreviousApplications()
         self.previousApplicationsTable = tableModel(self, data, header)
         self.tbl_prevApplications.setModel(self.previousApplicationsTable)
         self.tbl_prevApplications.horizontalHeader().resizeSections(QtWidgets.QHeaderView.ResizeToContents)
@@ -168,6 +172,14 @@ class managerDashboardWindow(managerDashboard.Ui_MainWindow, QtWidgets.QMainWind
         self.managerTeamMembers = managerTeamMembersWindow()
         self.adminManagerProfiles = adminManagerProfilesWindow()
 
+        # tables
+        self.chart_memberStats = QChartView(self.chart_memberStats)
+        self.chart_memberStats.setGeometry(self.chart_memberStats.rect())
+        self.chart_memberStats.resize(380, 246)
+
+        # show tables
+        self.showMemberStats()
+
     def pendingApplications(self):
         self.managerPendingApplications.show()
         self.managerPendingApplications.setFocus()
@@ -179,6 +191,36 @@ class managerDashboardWindow(managerDashboard.Ui_MainWindow, QtWidgets.QMainWind
     def adminManagerProfiles(self):
         self.adminManagerProfiles.show()
         self.adminManagerProfiles.setFocus()
+
+    def showMemberStats(self):
+        teams, memberCounts = managers.getMemberStats()
+
+        barSeries = QBarSeries()
+
+        set1 = QBarSet('Member Count')
+        set1.append(memberCounts)
+        barSeries.append(set1)
+
+        chart = QChart()
+        chart.addSeries(barSeries)
+
+        chart.setTitle('Member Statistics')
+        chart.setAnimationOptions(QChart.SeriesAnimations)
+
+        categories = [str(team) for team in teams]
+        axisX = QBarCategoryAxis()
+        axisX.append(categories)
+        axisX.setLabelsAngle(45)  # rotates labels 45 degrees
+        chart.addAxis(axisX, QtCore.Qt.AlignBottom)
+        barSeries.attachAxis(axisX)
+
+        self.chart_memberStats.setChart(chart)
+        self.chart_memberStats.setRenderHint(QtGui.QPainter.Antialiasing)
+
+        chart.legend().setVisible(True)
+        chart.legend().setAlignment(QtCore.Qt.AlignBottom)
+
+        self.chart_memberStats.show()
 
     def logout(self):
         if messageBox('Confirmation', 'Are you sure you want to exit?', 'question', True) == QtWidgets.QMessageBox.Ok:
@@ -211,7 +253,7 @@ class managerPendingApplicationsWindow(managerPendingApplications.Ui_MainWindow,
     def pendingApplications(self, keyword=None):
         keyword = self.line_searchBar.text()
         header = ['Application ID', 'Applicant Name', 'Date', 'Team']
-        data = getPendingApplications(keyword)
+        data = managers.getPendingApplications(keyword)
 
         if not data:
             data = ['', '', '', '']
@@ -255,7 +297,7 @@ class managerTeamMembersWindow(managerTeamMembers.Ui_MainWindow, QtWidgets.QMain
     def teamMembers(self, keyword=None):
         keyword = self.line_searchBar.text()
         header = ['Member ID', 'Member Name', 'Team']
-        data = getTeamMembers(keyword)
+        data = managers.getTeamMembers(keyword)
 
         if not data:
             data = ['', '', '']
@@ -287,7 +329,7 @@ class managerAddNewMemberWindow(managerAddNewMember.Ui_MainWindow, QtWidgets.QMa
         # slots and signals
 
         # buttons
-        # add new member btn
+        self.btn_addMember.clicked.connect(self.addMember)
         self.btn_cancel.clicked.connect(self.cancel)
         self.combo_teamSelect.currentIndexChanged.connect(self.teamSelect)
 
@@ -330,6 +372,30 @@ class managerAddNewMemberWindow(managerAddNewMember.Ui_MainWindow, QtWidgets.QMa
     def printDob(self):
         self.date_dob.setDate(self.date_dob.date())
 
+    def addMember(self):
+        firstName = self.line_firstName.text()
+        surname = self.line_surname.text()
+        dob = self.date_dob.text()
+        mobileNumber = self.line_mobileNumber.text()
+        team = self.combo_teamSelect.currentText()
+        email = self.line_email.text()
+        dLeader = self.line_dLeader.text()
+
+        if firstName and surname and dob and mobileNumber and team:
+            if messageBox('Confirmation', 'Are you sure you want to register this manager?', 'question', True) == \
+                    QtWidgets.QMessageBox.Ok:
+                managers.add(firstName, surname, surname, dob, mobileNumber, team, email, dLeader)
+                messageBox('Success', 'Manager successfully registered!', 'information', False)
+                if self.managerTeamMembers is None:
+                    self.managerTeamMembers = adminManagerProfilesWindow()
+                self.close()
+                self.adminManagerProfiles.setFocus()
+            else:
+                self.setFocus()
+        else:
+            messageBox('Error', 'Please fill in all the fields!', 'critical', False)
+            self.setFocus()
+
     def cancel(self):
         if messageBox('Confirmation', 'Are you sure you want to exit?', 'question', True) == QtWidgets.QMessageBox.Ok:
             if self.managerTeamMembers is None:
@@ -368,7 +434,7 @@ class adminManagerProfilesWindow(adminManagerProfiles.Ui_MainWindow, QtWidgets.Q
     def managerProfiles(self, keyword=None):
         keyword = self.line_searchBar.text()
         header = ['Manager ID', 'Manager Name', 'Manager Username']
-        data = getManagerProfiles(keyword)
+        data = administrators.getManagerProfiles(keyword)
 
         if not data:
             data = ['', '', '']
@@ -396,7 +462,7 @@ class adminRegisterManagerWindow(adminRegisterManager.Ui_MainWindow, QtWidgets.Q
         # slots and signals
 
         # buttons
-        self.btn_registerManager.clicked.connect(self.registerNewManager)
+        # self.btn_addNewMember.clicked.connect(self.addNewMember)
         self.btn_cancel.clicked.connect(self.cancel)
 
         # text edits
@@ -426,27 +492,6 @@ class adminRegisterManagerWindow(adminRegisterManager.Ui_MainWindow, QtWidgets.Q
 
     def printPassword(self):
         self.line_password.setText(self.line_password.text())
-
-    def registerNewManager(self):
-        firstName = self.line_firstName.text()
-        surname = self.line_surname.text()
-        username = self.line_username.text()
-        password = self.line_password.text()
-
-        if firstName and surname and username and password:
-            if messageBox('Confirmation', 'Are you sure you want to register this manager?', 'question', True) == \
-                    QtWidgets.QMessageBox.Ok:
-                managers.add(firstName, surname, username, password)
-                messageBox('Success', 'Manager successfully registered!', 'information', False)
-                if self.adminManagerProfiles is None:
-                    self.adminManagerProfiles = adminManagerProfilesWindow()
-                self.close()
-                self.adminManagerProfiles.setFocus()
-            else:
-                self.setFocus()
-        else:
-            messageBox('Error', 'Please fill in all the fields!', 'critical', False)
-            self.setFocus()
 
     def cancel(self):
         if messageBox('Confirmation', 'Are you sure you want to exit?', 'question', True) == QtWidgets.QMessageBox.Ok:
