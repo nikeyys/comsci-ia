@@ -85,6 +85,7 @@ class administrators:
         with ConnectionPool() as cursor:
             cursor.execute('''INSERT INTO manager("managerFirstName", "managerSurname", "managerUsername", 
             "managerPassword") VALUES(%s,%s,%s,%s)''', (firstName, lastName, username, password))
+
     @staticmethod
     def getManagerProfiles(keyword):
         with ConnectionPool() as cursor:
