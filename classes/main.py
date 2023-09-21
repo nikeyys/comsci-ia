@@ -51,10 +51,6 @@ class loginWindow(login.Ui_MainWindow, QtWidgets.QMainWindow):
         self.line_managerPassword.textChanged.connect(self.printPassword)
         self.line_managerPassword.returnPressed.connect(self.loginManager)
 
-        # calling other windows
-        self.applicantDashboard = applicantDashboardWindow()
-        self.managerDashboard = managerDashboardWindow()
-
     def printApplicantUsername(self):
         usernameEntered = self.line_applicantUsername.text()
         filteredUser = verifyUsername(usernameEntered)
@@ -90,10 +86,9 @@ class loginWindow(login.Ui_MainWindow, QtWidgets.QMainWindow):
         if general.verifyLogin(usernameEntered, passwordEntered, loginType):
             messageBox('Success', 'Logged in Successfully!', 'information')
             print('Login Successfully!')
-            self.applicantDashboard.show()
-            self.line_applicantUsername.clear()
-            self.line_applicantPassword.clear()
             self.close()
+            applicantDashboardWindow.show()
+            self.line_applicantPassword.clear()
         else:
             messageBox('Error', 'Invalid username or password! Please try again.', 'warning')
             self.line_applicantPassword.setFocus()
@@ -105,10 +100,9 @@ class loginWindow(login.Ui_MainWindow, QtWidgets.QMainWindow):
         if general.verifyLogin(usernameEntered, passwordEntered, loginType):
             messageBox('Success', 'Logged in Successfully!', 'information')
             print('Login Successfully!')
-            self.managerDashboard.show()
-            self.line_managerUsername.clear()
-            self.line_managerPassword.clear()
             self.close()
+            managerDashboardWindow.show()
+            self.line_managerPassword.clear()
         else:
             messageBox('Error', 'Invalid username or password! Please try again.', 'warning')
             self.line_managerPassword.setFocus()
@@ -136,9 +130,6 @@ class applicantDashboardWindow(applicantDashboard.Ui_MainWindow, QtWidgets.QMain
         self.btn_logout.clicked.connect(self.logout)
         # self.btn_newApplication.clicked.connect(self.newApplication)
 
-        # calling other windows
-        # self.newApplication = newApplicationWindow()
-
     def previousApplications(self):
         header = ['Application ID', 'Date', 'Team', 'Status']
         data = managers.getPreviousApplications()
@@ -149,7 +140,7 @@ class applicantDashboardWindow(applicantDashboard.Ui_MainWindow, QtWidgets.QMain
     def logout(self):
         if messageBox('Confirmation', 'Are you sure you want to exit?', 'question', True) == QtWidgets.QMessageBox.Ok:
             self.close()
-            login.show()
+            loginWindow.show()
         else:
             self.setFocus()
 
@@ -167,11 +158,6 @@ class managerDashboardWindow(managerDashboard.Ui_MainWindow, QtWidgets.QMainWind
         self.btn_adminManagerProfile.clicked.connect(self.adminManagerProfiles)
         self.btn_logout.clicked.connect(self.logout)
 
-        # calling other windows
-        self.managerPendingApplications = managerPendingApplicationsWindow()
-        self.managerTeamMembers = managerTeamMembersWindow()
-        self.adminManagerProfiles = adminManagerProfilesWindow()
-
         # tables
         self.chart_memberStats = QChartView(self.chart_memberStats)
         self.chart_memberStats.setGeometry(self.chart_memberStats.rect())
@@ -181,16 +167,16 @@ class managerDashboardWindow(managerDashboard.Ui_MainWindow, QtWidgets.QMainWind
         self.showMemberStats()
 
     def pendingApplications(self):
-        self.managerPendingApplications.show()
-        self.managerPendingApplications.setFocus()
+        managerPendingApplicationsWindow.show()
+        managerPendingApplicationsWindow.setFocus()
 
     def teamMembers(self):
-        self.managerTeamMembers.show()
-        self.managerTeamMembers.setFocus()
+        managerTeamMembersWindow.show()
+        managerTeamMembersWindow.setFocus()
 
     def adminManagerProfiles(self):
-        self.adminManagerProfiles.show()
-        self.adminManagerProfiles.setFocus()
+        adminManagerProfilesWindow.show()
+        adminManagerProfilesWindow.setFocus()
 
     def showMemberStats(self):
         teams, memberCounts = managers.getMemberStats()
@@ -225,7 +211,7 @@ class managerDashboardWindow(managerDashboard.Ui_MainWindow, QtWidgets.QMainWind
     def logout(self):
         if messageBox('Confirmation', 'Are you sure you want to exit?', 'question', True) == QtWidgets.QMessageBox.Ok:
             self.close()
-            login.show()
+            loginWindow.show()
         else:
             self.setFocus()
 
@@ -247,9 +233,6 @@ class managerPendingApplicationsWindow(managerPendingApplications.Ui_MainWindow,
         # line edits
         self.line_searchBar.textChanged.connect(self.pendingApplications)
 
-        # initializing managerDashboardWindow instance
-        self.managerDashboard = None
-
     def pendingApplications(self, keyword=None):
         keyword = self.line_searchBar.text()
         header = ['Application ID', 'Applicant Name', 'Date', 'Team']
@@ -263,10 +246,8 @@ class managerPendingApplicationsWindow(managerPendingApplications.Ui_MainWindow,
         self.tbl_pendingApplications.horizontalHeader().resizeSections(QtWidgets.QHeaderView.ResizeToContents)
 
     def backToDashboard(self):
-        if self.managerDashboard is None:
-            self.managerDashboard = managerDashboardWindow()
         self.close()
-        self.managerDashboard.setFocus()
+        managerDashboardWindow.setFocus()
 
 
 class managerTeamMembersWindow(managerTeamMembers.Ui_MainWindow, QtWidgets.QMainWindow):
@@ -288,12 +269,6 @@ class managerTeamMembersWindow(managerTeamMembers.Ui_MainWindow, QtWidgets.QMain
         # line edits
         self.line_searchBar.textChanged.connect(self.teamMembers)
 
-        # initializing managerDashboardWindow instance
-        self.managerDashboard = None
-
-        # calling other windows
-        self.managerAddNewMember = managerAddNewMemberWindow()
-
     def teamMembers(self, keyword=None):
         keyword = self.line_searchBar.text()
         header = ['Member ID', 'Member Name', 'Team']
@@ -311,14 +286,13 @@ class managerTeamMembersWindow(managerTeamMembers.Ui_MainWindow, QtWidgets.QMain
         self.teamMembersTable.setTeamFilters(teamFilter)
 
     def backToDashboard(self):
-        if self.managerDashboard is None:
-            self.managerDashboard = managerDashboardWindow()
+        managerDashboardWindow.show()
         self.close()
-        self.managerDashboard.setFocus()
+        managerDashboardWindow.setFocus()
 
     def managerAddNewMember(self):
-        self.managerAddNewMember.show()
-        self.managerAddNewMember.setFocus()
+        managerAddNewMemberWindow.show()
+        managerAddNewMemberWindow.setFocus()
 
 
 class managerAddNewMemberWindow(managerAddNewMember.Ui_MainWindow, QtWidgets.QMainWindow):
@@ -329,23 +303,20 @@ class managerAddNewMemberWindow(managerAddNewMember.Ui_MainWindow, QtWidgets.QMa
         # slots and signals
 
         # buttons
-        self.btn_addMember.clicked.connect(self.addMember)
+        self.btn_addNewMember.clicked.connect(self.addMember)
         self.btn_cancel.clicked.connect(self.cancel)
         self.combo_teamSelect.currentIndexChanged.connect(self.teamSelect)
+        self.combo_dLeader.currentIndexChanged.connect(self.printDLeader)
 
         # line edits
         self.line_firstName.textChanged.connect(self.printFirstName)
         self.line_surname.textChanged.connect(self.printSurname)
         self.line_mobileNumber.textChanged.connect(self.printMobileNumber)
         self.line_email.textChanged.connect(self.printEmail)
-        self.line_dLeader.textChanged.connect(self.printDLeader)
 
         # date entry
         self.date_dob.setCalendarPopup(True)
         self.date_dob.dateChanged.connect(self.printDob)
-
-        # initializing managerTeamMembersWindow instance
-        self.managerTeamMembers = None
 
         # validators
         self.line_mobileNumber.setValidator(QtGui.QIntValidator())
@@ -363,7 +334,8 @@ class managerAddNewMemberWindow(managerAddNewMember.Ui_MainWindow, QtWidgets.QMa
         self.line_email.setText(self.line_email.text())
 
     def printDLeader(self):
-        self.line_dLeader.setText(self.line_dLeader.text())
+        dLeader = self.combo_dLeader.currentText()
+        self.combo_dLeader.setCurrentText(dLeader)
 
     def teamSelect(self):
         team = self.combo_teamSelect.currentText()
@@ -379,17 +351,33 @@ class managerAddNewMemberWindow(managerAddNewMember.Ui_MainWindow, QtWidgets.QMa
         mobileNumber = self.line_mobileNumber.text()
         team = self.combo_teamSelect.currentText()
         email = self.line_email.text()
-        dLeader = self.line_dLeader.text()
+        dleaderIndex = self.combo_dLeader.currentText()
 
-        if firstName and surname and dob and mobileNumber and team:
-            if messageBox('Confirmation', 'Are you sure you want to register this manager?', 'question', True) == \
+        if team != 'Select Option':
+            if team == 'Camera & Graphics':
+                teamIndex = '1'
+            elif team == 'Sounds & Lights':
+                teamIndex = '2'
+            elif team == 'Stage Management':
+                teamIndex = '3'
+        else:
+            teamIndex = ''
+
+        if email == '':
+            email = None
+
+        if dleaderIndex == '':
+            dleaderIndex = None
+
+        if firstName and surname and dob and mobileNumber and teamIndex != '':
+            if messageBox('Confirmation', 'Are you sure you want to register this member?', 'question', True) == \
                     QtWidgets.QMessageBox.Ok:
-                managers.add(firstName, surname, surname, dob, mobileNumber, team, email, dLeader)
-                messageBox('Success', 'Manager successfully registered!', 'information', False)
-                if self.managerTeamMembers is None:
-                    self.managerTeamMembers = adminManagerProfilesWindow()
+                managers.addNewMember(firstName, surname, dob, mobileNumber, teamIndex, email, dleaderIndex)
+                messageBox('Success', 'Member successfully registered!', 'information', False)
+
+                managerTeamMembersWindow.show()
                 self.close()
-                self.adminManagerProfiles.setFocus()
+                managerTeamMembersWindow.setFocus()
             else:
                 self.setFocus()
         else:
@@ -398,10 +386,9 @@ class managerAddNewMemberWindow(managerAddNewMember.Ui_MainWindow, QtWidgets.QMa
 
     def cancel(self):
         if messageBox('Confirmation', 'Are you sure you want to exit?', 'question', True) == QtWidgets.QMessageBox.Ok:
-            if self.managerTeamMembers is None:
-                self.managerTeamMembers = managerTeamMembersWindow()
+            managerTeamMembersWindow.show()
             self.close()
-            self.managerTeamMembers.setFocus()
+            managerTeamMembersWindow.setFocus()
         else:
             self.setFocus()
 
@@ -425,12 +412,6 @@ class adminManagerProfilesWindow(adminManagerProfiles.Ui_MainWindow, QtWidgets.Q
         # line edits
         self.line_searchBar.textChanged.connect(self.managerProfiles)
 
-        # initializing adminDashboardWindow instance
-        self.managerDashboard = None
-
-        # calling other windows
-        self.adminRegisterManager = adminRegisterManagerWindow()
-
     def managerProfiles(self, keyword=None):
         keyword = self.line_searchBar.text()
         header = ['Manager ID', 'Manager Name', 'Manager Username']
@@ -444,14 +425,13 @@ class adminManagerProfilesWindow(adminManagerProfiles.Ui_MainWindow, QtWidgets.Q
         self.tbl_managerProfiles.horizontalHeader().resizeSections(QtWidgets.QHeaderView.ResizeToContents)
 
     def adminRegisterManager(self):
-        self.adminRegisterManager.show()
-        self.adminRegisterManager.setFocus()
+        adminRegisterManagerWindow.show()
+        adminRegisterManagerWindow.setFocus()
 
     def backToDashboard(self):
-        if self.managerDashboard is None:
-            self.managerDashboard = managerDashboardWindow()
+        managerDashboardWindow.show()
         self.close()
-        self.managerDashboard.setFocus()
+        managerDashboardWindow.setFocus()
 
 
 class adminRegisterManagerWindow(adminRegisterManager.Ui_MainWindow, QtWidgets.QMainWindow):
@@ -470,9 +450,6 @@ class adminRegisterManagerWindow(adminRegisterManager.Ui_MainWindow, QtWidgets.Q
         self.line_surname.textChanged.connect(self.printSurname)
         self.line_username.textChanged.connect(self.printUsername)
         self.line_password.textChanged.connect(self.printPassword)
-
-        # initializing adminManagerProfilesWindow instance
-        self.adminManagerProfiles = None
 
     def printFirstName(self):
         self.line_firstName.setText(self.line_firstName.text())
@@ -495,10 +472,9 @@ class adminRegisterManagerWindow(adminRegisterManager.Ui_MainWindow, QtWidgets.Q
 
     def cancel(self):
         if messageBox('Confirmation', 'Are you sure you want to exit?', 'question', True) == QtWidgets.QMessageBox.Ok:
-            if self.adminManagerProfiles is None:
-                self.adminManagerProfiles = adminManagerProfilesWindow()
+            adminManagerProfilesWindow.show()
             self.close()
-            self.adminManagerProfiles.setFocus()
+            adminManagerProfilesWindow.setFocus()
         else:
             self.setFocus()
 
@@ -507,6 +483,15 @@ if __name__ == '__main__':
     Database.initialize(database='ccf-volunteers', user='postgres', password='543738', host='localhost', port='5432')
 
     app = QApplication(sys.argv)
-    login = loginWindow()
-    login.show()
+
+    loginWindow = loginWindow()
+    applicantDashboardWindow = applicantDashboardWindow()
+    managerDashboardWindow = managerDashboardWindow()
+    managerPendingApplicationsWindow = managerPendingApplicationsWindow()
+    managerTeamMembersWindow = managerTeamMembersWindow()
+    managerAddNewMemberWindow = managerAddNewMemberWindow()
+    adminManagerProfilesWindow = adminManagerProfilesWindow()
+    adminRegisterManagerWindow = adminRegisterManagerWindow()
+
+    loginWindow.show()
     sys.exit(app.exec_())
