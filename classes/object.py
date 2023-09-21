@@ -78,6 +78,14 @@ class managers:
 
         return teams, memberCounts
 
+    @staticmethod
+    def addNewMember(firstName, lastName, dob, mobileNumber, team, email, dleaderIndex):
+        with ConnectionPool() as cursor:
+            cursor.execute('''INSERT INTO member("memberFirstName", "memberSurname", "memberDOB", "memberMobileNumber",
+            "teamID", "memberEmail", "dleaderID") VALUES(%s,%s,%s,%s,%s,%s,%s)''', (firstName, lastName, dob,
+                                                                                   mobileNumber, team,
+                                                                                   email, dleaderIndex))
+
 
 class administrators:
     @staticmethod
