@@ -86,6 +86,19 @@ class loginWindow(login.Ui_MainWindow, QtWidgets.QMainWindow):
         if general.verifyLogin(usernameEntered, passwordEntered, loginType):
             messageBox('Success', 'Logged in Successfully!', 'information')
             print('Login Successfully!')
+
+            # change UI details in applicant dashboard
+            result = applicants.fetchApplicantDetails(usernameEntered)
+            if result:
+                applicantName, applicantID, dleaderName, applicantMobileNumber, applicantEmail, applicantDOB = result
+
+            applicantDashboardWindow.label_applicantName.setText(f'{applicantName}')
+            applicantDashboardWindow.label_applicantID.setText(f'Applicant ID: {applicantID}')
+            applicantDashboardWindow.label_dLeader.setText(f'Discipleship Leader: {dleaderName}')
+            applicantDashboardWindow.label_mobileNumber.setText(f'Mobile Number: {applicantMobileNumber}')
+            applicantDashboardWindow.label_emailAddress.setText(f'Email Address: {applicantEmail}')
+            applicantDashboardWindow.label_dob.setText(f'Date of Birth: {applicantDOB}')
+
             self.close()
             applicantDashboardWindow.show()
             self.line_applicantPassword.clear()
@@ -132,7 +145,7 @@ class applicantDashboardWindow(applicantDashboard.Ui_MainWindow, QtWidgets.QMain
 
     def previousApplications(self):
         header = ['Application ID', 'Date', 'Team', 'Status']
-        data = managers.getPreviousApplications()
+        data = applicants.getPreviousApplications()
         self.previousApplicationsTable = tableModel(self, data, header)
         self.tbl_prevApplications.setModel(self.previousApplicationsTable)
         self.tbl_prevApplications.horizontalHeader().resizeSections(QtWidgets.QHeaderView.ResizeToContents)

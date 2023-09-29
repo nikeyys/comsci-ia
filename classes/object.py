@@ -33,14 +33,39 @@ class general:
             "managerSurname") VALUES(%s,%s,%s,%s)''', (user, passw, firstName, surname))
 
 
-class managers:
+class applicants:
     @staticmethod
     def getPreviousApplications():
         with ConnectionPool() as cursor:
             cursor.execute(
-                '''SELECT "applicationID", "applicationDate", "teamID", "applicationStatus" FROM application''')
+                '''SELECT "applicationID", "applicationDate", "teamID", "applicationStatus" FROM application''', ())
             return cursor.fetchall()
 
+    @staticmethod
+    def fetchApplicantDetails(user):
+        with ConnectionPool() as cursor:
+            cursor.execute(
+                '''SELECT CONCAT(UPPER("applicantSurname"), ', ', "applicantFirstName") AS "applicantName", 
+                applicant."applicantID", CONCAT(UPPER("dleaderSurname"), ', ', "dleaderFirstName") AS "dleaderName", 
+                "applicantMobileNumber", "applicantEmail", "applicantDOB"
+                FROM applicant 
+                INNER JOIN "applicantCredentials" ON applicant."applicantID" = "applicantCredentials"."applicantID"
+                FULL OUTER JOIN "dleader" ON applicant."dleaderID" = dleader."dleaderID"
+                WHERE "applicantUsername" = %s''', (user,))
+            row = cursor.fetchone()
+            if row is not None:
+                applicantName = row[0]
+                applicantID = row[1]
+                dleaderName = row[2] if row[2] != ", " else 'No DLeader assigned.'
+                applicantMobileNumber = row[3]
+                applicantEmail = row[4] if row[4] is not None else 'No email provided.'
+                applicantDOB = row[5]
+                return applicantName, applicantID, dleaderName, applicantMobileNumber, applicantEmail, applicantDOB
+            else:
+                return None
+
+
+class managers:
     @staticmethod
     def getPendingApplications(keyword=None):
         with ConnectionPool() as cursor:
@@ -50,7 +75,8 @@ class managers:
             FROM application
             INNER JOIN applicant ON application."applicantID" = applicant."applicantID"
             WHERE application."applicationStatus" = 'Pending' AND (applicant."applicantFirstName" ILIKE %s 
-            OR applicant."applicantSurname" ILIKE %s)''', (f'%{keyword}%', f'%{keyword}%'))
+            OR applicant."applicantSurname" ILIKE %s)
+            ORDER BY "applicationID"''', (f'%{keyword}%', f'%{keyword}%'))
             return cursor.fetchall()
 
     @staticmethod
@@ -60,7 +86,8 @@ class managers:
                 SELECT "memberID", CONCAT("memberFirstName", ' ', "memberSurname") AS "memberName", team."teamName"
                 FROM member
                 INNER JOIN team ON member."teamID" = team."teamID"
-                WHERE member."memberFirstName" ILIKE %s OR member."memberSurname" ILIKE %s''',
+                WHERE member."memberFirstName" ILIKE %s OR member."memberSurname" ILIKE %s
+                ORDER BY "memberID"''',
                            (f'%{keyword}%', f'%{keyword}%'))
             return cursor.fetchall()
 
@@ -101,6 +128,7 @@ class administrators:
                 SELECT "managerID", CONCAT("managerFirstName", ' ', "managerSurname") AS "managerName", "managerUsername"
                 FROM manager
                 WHERE manager."managerFirstName" ILIKE %s OR manager."managerSurname" ILIKE %s
+                ORDER BY "managerID"
                 ''', (f'%{keyword}%', f'%{keyword}%'))
             return cursor.fetchall()
 
