@@ -1,22 +1,16 @@
+import random
+import re  # regex
 import sys
 
-from PyQt5 import QtWidgets, QtCore, QtChart
-from PyQt5.QtWidgets import QApplication, QMainWindow
-from PyQt5.QtChart import QChart, QBarSeries, QBarSet, QBarCategoryAxis, QChartView, QCategoryAxis
-from PyQt5.QtGui import QPainter
-from PyQt5.QtCore import Qt, QDateTime
+from PyQt5.QtChart import QChart, QBarSeries, QBarSet, QBarCategoryAxis, QChartView
+from PyQt5.QtCore import QDateTime
+from PyQt5.QtWidgets import QApplication
 
-import keyboard
-import re  # regex
-import datetime
-import random
-
+from classes.dialogBoxes import *
+from classes.object import *
+from classes.tableModel import *
 from ui import login, applicantDashboard, managerDashboard, managerPendingApplications, managerTeamMembers, \
     managerAddNewMember, adminManagerProfiles, adminRegisterManager
-
-from classes.object import *
-from classes.dialogBoxes import *
-from classes.tableModel import *
 
 
 def verifyUsername(username):
