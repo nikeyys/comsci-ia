@@ -113,6 +113,19 @@ class managers:
                                                                                    mobileNumber, team,
                                                                                    email, dleaderIndex))
 
+    @staticmethod
+    def fetchManagerDetails(user):
+        with ConnectionPool() as cursor:
+            cursor.execute(
+                '''SELECT "managerFirstName" AS "managerName" FROM manager 
+                WHERE "managerUsername" = %s''', (user,))
+            row = cursor.fetchone()
+        if row is not None:
+            managerName = row[0]
+            return managerName
+        else:
+            return None
+
 
 class administrators:
     @staticmethod

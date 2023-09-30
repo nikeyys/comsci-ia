@@ -4,10 +4,12 @@ from PyQt5 import QtWidgets, QtCore, QtChart
 from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5.QtChart import QChart, QBarSeries, QBarSet, QBarCategoryAxis, QChartView, QCategoryAxis
 from PyQt5.QtGui import QPainter
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QDateTime
 
 import keyboard
-import re
+import re  # regex
+import datetime
+import random
 
 from ui import login, applicantDashboard, managerDashboard, managerPendingApplications, managerTeamMembers, \
     managerAddNewMember, adminManagerProfiles, adminRegisterManager
@@ -33,10 +35,12 @@ class loginWindow(login.Ui_MainWindow, QtWidgets.QMainWindow):
         # applicant
         self.btn_applicantLogin.clicked.connect(self.loginApplicant)
         self.btn_applicantCancel.clicked.connect(self.cancel)
+        self.check_applicantShowPass.clicked.connect(self.showPass)
 
         # manager
         self.btn_managerLogin.clicked.connect(self.loginManager)
         self.btn_managerCancel.clicked.connect(self.cancel)
+        self.check_managerShowPass.clicked.connect(self.showPass)
 
         # line edits
         # applicant
@@ -113,12 +117,51 @@ class loginWindow(login.Ui_MainWindow, QtWidgets.QMainWindow):
         if general.verifyLogin(usernameEntered, passwordEntered, loginType):
             messageBox('Success', 'Logged in Successfully!', 'information')
             print('Login Successfully!')
+
+            # change UI details in manager dashboard
+            currentTime = QDateTime.currentDateTime().time()
+            managerName = managers.fetchManagerDetails(usernameEntered)
+
+            if currentTime < QDateTime.currentDateTime().time().fromString("12:00", "hh:mm"):
+                morning = [f"⛅ Sun's up! Good morning, {managerName}!",
+                           f"🏆 New day. New wins! You got this, {managerName}!",
+                           f"☕ Rise and shine, it's coffee time! Good morning, {managerName}!",
+                           f"🌤️ Sunshine is the best medicine. Good morning, {managerName}!",
+                           f"🥇 Excellence awaits. Good morning, {managerName}!"]
+                message = random.choice(morning)
+            elif currentTime < QDateTime.currentDateTime().time().fromString("17:00", "hh:mm"):
+                afternoon = [f"🌟 The half of the day is over, but there's time to make it amazing! Good afternoon, {managerName}!",
+                             f"🚫 No yawns allowed in the afternoon zone. Stay alert, {managerName}!",
+                             f"☕️ Afternoon pick-me-up: a cup of coffee and a smile. Good afternoon, {managerName}!",
+                             f"🚀 Stay sharp, {managerName}!",
+                             f"🏁 Halfway there! No slowing down, {managerName}!"]
+                message = random.choice(afternoon)
+            else:
+                evening = [f"✨ Under the stars! Good evening, {managerName}!",
+                           f"🌌 Evening breeze, good vibes! Enjoy your night, {managerName}!",
+                           f"😌 Evening: the perfect time to relax and unwind.",
+                           f"🌆 Good evening, {managerName}! What's your next adventure?",
+                           f"🌙 Peaceful mode: on. Enjoy your evening, {managerName}!"]
+                message = random.choice(evening)
+            managerDashboardWindow.label_greeting.setText(f'{message}')
+
             self.close()
             managerDashboardWindow.show()
             self.line_managerPassword.clear()
         else:
             messageBox('Error', 'Invalid username or password! Please try again.', 'warning')
             self.line_managerPassword.setFocus()
+
+    def showPass(self):
+        if self.check_applicantShowPass.isChecked():
+            self.line_applicantPassword.setEchoMode(QtWidgets.QLineEdit.Normal)
+        elif not self.check_applicantShowPass.isChecked():
+            self.line_applicantPassword.setEchoMode(QtWidgets.QLineEdit.Password)
+
+        if self.check_managerShowPass.isChecked():
+            self.line_managerPassword.setEchoMode(QtWidgets.QLineEdit.Normal)
+        elif not self.check_managerShowPass.isChecked():
+            self.line_managerPassword.setEchoMode(QtWidgets.QLineEdit.Password)
 
     def cancel(self):
         if messageBox('Confirmation', 'Are you sure you want to exit?', 'question', True) == QtWidgets.QMessageBox.Ok:
@@ -174,7 +217,7 @@ class managerDashboardWindow(managerDashboard.Ui_MainWindow, QtWidgets.QMainWind
         # tables
         self.chart_memberStats = QChartView(self.chart_memberStats)
         self.chart_memberStats.setGeometry(self.chart_memberStats.rect())
-        self.chart_memberStats.resize(380, 246)
+        self.chart_memberStats.resize(406, 249)
 
         # show tables
         self.showMemberStats()

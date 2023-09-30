@@ -62,7 +62,7 @@
              <x>9</x>
              <y>9</y>
              <width>431</width>
-             <height>251</height>
+             <height>258</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="vLayout_applicantLogin">
@@ -75,22 +75,6 @@
             </item>
             <item>
              <widget class="QLineEdit" name="line_applicantUsername"/>
-            </item>
-            <item>
-             <spacer name="vSpacer">
-              <property name="orientation">
-               <enum>Qt::Vertical</enum>
-              </property>
-              <property name="sizeType">
-               <enum>QSizePolicy::Preferred</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
             </item>
             <item>
              <widget class="QLabel" name="label_applicantPassword">
@@ -107,7 +91,19 @@
              </widget>
             </item>
             <item>
-             <spacer name="vSpacer_2">
+             <widget class="QCheckBox" name="check_applicantShowPass">
+              <property name="font">
+               <font>
+                <pointsize>8</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>Show Password</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="vSpacer_10">
               <property name="orientation">
                <enum>Qt::Vertical</enum>
               </property>
@@ -117,7 +113,7 @@
               <property name="sizeHint" stdset="0">
                <size>
                 <width>20</width>
-                <height>30</height>
+                <height>40</height>
                </size>
               </property>
              </spacer>
@@ -137,7 +133,7 @@
              </widget>
             </item>
             <item>
-             <spacer name="vSpacer_3">
+             <spacer name="vSpacer_11">
               <property name="orientation">
                <enum>Qt::Vertical</enum>
               </property>
@@ -209,7 +205,7 @@
              <x>10</x>
              <y>10</y>
              <width>431</width>
-             <height>251</height>
+             <height>252</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="vLayout_managerLogin_3">
@@ -222,22 +218,6 @@
             </item>
             <item>
              <widget class="QLineEdit" name="line_managerUsername"/>
-            </item>
-            <item>
-             <spacer name="vSpacer_7">
-              <property name="orientation">
-               <enum>Qt::Vertical</enum>
-              </property>
-              <property name="sizeType">
-               <enum>QSizePolicy::Preferred</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
             </item>
             <item>
              <widget class="QLabel" name="label_managerPassword">
@@ -254,6 +234,18 @@
              </widget>
             </item>
             <item>
+             <widget class="QCheckBox" name="check_managerShowPass">
+              <property name="font">
+               <font>
+                <pointsize>8</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>Show Password</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <spacer name="vSpacer_8">
               <property name="orientation">
                <enum>Qt::Vertical</enum>
@@ -264,7 +256,7 @@
               <property name="sizeHint" stdset="0">
                <size>
                 <width>20</width>
-                <height>30</height>
+                <height>40</height>
                </size>
               </property>
              </spacer>
