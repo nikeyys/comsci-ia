@@ -140,10 +140,16 @@ class administrators:
             cursor.execute('''
                 SELECT "managerID", CONCAT("managerFirstName", ' ', "managerSurname") AS "managerName", "managerUsername"
                 FROM manager
-                WHERE manager."managerFirstName" ILIKE %s OR manager."managerSurname" ILIKE %s
+                WHERE manager."managerFirstName" ILIKE %s OR manager."managerSurname" ILIKE %s OR manager."managerUsername" ILIKE %s
                 ORDER BY "managerID"
-                ''', (f'%{keyword}%', f'%{keyword}%'))
+                ''', (f'%{keyword}%', f'%{keyword}%', f'%{keyword}%'))
             return cursor.fetchall()
+
+    @staticmethod
+    def removeManager(manID):
+        with ConnectionPool() as cursor:
+            cursor.execute('''DELETE FROM manager WHERE "managerID" = %s''', (manID,))
+
 
 
 if __name__ == '__main__':

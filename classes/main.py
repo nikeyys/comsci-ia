@@ -124,11 +124,11 @@ class loginWindow(login.Ui_MainWindow, QtWidgets.QMainWindow):
                            f"🥇 Excellence awaits. Good morning, {managerName}!"]
                 message = random.choice(morning)
             elif currentTime < QDateTime.currentDateTime().time().fromString("17:00", "hh:mm"):
-                afternoon = [f"🌟 The half of the day is over, but there's time to make it amazing! Good afternoon, {managerName}!",
+                afternoon = [f"🌟 The half of the day is over, but there's time to make it amazing!",
                              f"🚫 No yawns allowed in the afternoon zone. Stay alert, {managerName}!",
-                             f"☕️ Afternoon pick-me-up: a cup of coffee and a smile. Good afternoon, {managerName}!",
+                             f"☕️ A cup of coffee and a smile is all you need. Good afternoon, {managerName}!",
                              f"🚀 Stay sharp, {managerName}!",
-                             f"🏁 Halfway there! No slowing down, {managerName}!"]
+                             f"🏴 Halfway there! No slowing down, {managerName}!"]
                 message = random.choice(afternoon)
             else:
                 evening = [f"✨ Under the stars! Good evening, {managerName}!",
@@ -420,7 +420,12 @@ class managerAddNewMemberWindow(managerAddNewMember.Ui_MainWindow, QtWidgets.QMa
             dleaderIndex = None
 
         if firstName and surname and dob and mobileNumber and teamIndex != '':
-            if messageBox('Confirmation', 'Are you sure you want to register this member?', 'question', True) == \
+            checkDuplicateName = managers.getTeamMembers(firstName + surname)
+
+            if checkDuplicateName:
+                messageBox('Error', 'Member already exists!', 'critical', False)
+                self.setFocus()
+            elif messageBox('Confirmation', 'Are you sure you want to register this member?', 'question', True) == \
                     QtWidgets.QMessageBox.Ok:
                 managers.addNewMember(firstName, surname, dob, mobileNumber, teamIndex, email, dleaderIndex)
                 messageBox('Success', 'Member successfully registered!', 'information', False)
@@ -459,6 +464,9 @@ class adminManagerProfilesWindow(adminManagerProfiles.Ui_MainWindow, QtWidgets.Q
         self.btn_registerManager.clicked.connect(self.adminRegisterManager)
         # self.btn_removeManager.clicked.connect(self.removeManager)
 
+        # row click
+        self.btn_removeManager.clicked.connect(self.deleteManagerProfile)
+
         # line edits
         self.line_searchBar.textChanged.connect(self.managerProfiles)
 
@@ -473,6 +481,19 @@ class adminManagerProfilesWindow(adminManagerProfiles.Ui_MainWindow, QtWidgets.Q
         self.managerProfilesTable = tableModel(self, data, header)
         self.tbl_managerProfiles.setModel(self.managerProfilesTable)
         self.tbl_managerProfiles.horizontalHeader().resizeSections(QtWidgets.QHeaderView.ResizeToContents)
+
+    def deleteManagerProfile(self):
+        selectedManagerIndex = self.tbl_managerProfiles.selectionModel().currentIndex()
+
+        if selectedManagerIndex.isValid():
+            managerID = self.managerProfilesTable.data(self.managerProfilesTable.index(selectedManagerIndex.row(), 0),
+                                                       QtCore.Qt.DisplayRole)
+            managerName = self.managerProfilesTable.data(self.managerProfilesTable.index(selectedManagerIndex.row(), 1),
+                                                         QtCore.Qt.DisplayRole)
+            if messageBox('Confirmation', f'Are you sure you want to delete [{managerName}]? \n'
+                                          f'This action cannot be undone.', 'question', True) == QtWidgets.QMessageBox.Ok:
+                administrators.removeManager(managerID)
+                messageBox('Success', f'{managerName} has been removed.', 'information')
 
     def adminRegisterManager(self):
         adminRegisterManagerWindow.show()
@@ -492,7 +513,7 @@ class adminRegisterManagerWindow(adminRegisterManager.Ui_MainWindow, QtWidgets.Q
         # slots and signals
 
         # buttons
-        # self.btn_addNewMember.clicked.connect(self.addNewMember)
+        self.btn_registerManager.clicked.connect(self.registerManager)
         self.btn_cancel.clicked.connect(self.cancel)
 
         # text edits
@@ -519,6 +540,38 @@ class adminRegisterManagerWindow(adminRegisterManager.Ui_MainWindow, QtWidgets.Q
 
     def printPassword(self):
         self.line_password.setText(self.line_password.text())
+
+    def registerManager(self):
+        firstName = self.line_firstName.text()
+        surname = self.line_surname.text()
+        username = self.line_username.text()
+        password = self.line_password.text()
+
+        if firstName and surname and username and password:
+            checkDuplicateName = administrators.getManagerProfiles(firstName + surname)
+            checkDuplicateUsername = administrators.getManagerProfiles(username)
+
+            if checkDuplicateName or checkDuplicateUsername:
+                messageBox('Error', 'Manager already exists!', 'critical', False)
+                self.setFocus()
+            elif messageBox('Confirmation', 'Are you sure you want to register this manager?', 'question', True) == \
+                    QtWidgets.QMessageBox.Ok:
+                administrators.add(firstName, surname, username, password)
+                messageBox('Success', 'Manager successfully registered!', 'information', False)
+
+                self.line_firstName.clear()
+                self.line_surname.clear()
+                self.line_username.clear()
+                self.line_password.clear()
+
+                adminManagerProfilesWindow.show()
+                self.close()
+                adminManagerProfilesWindow.setFocus()
+            else:
+                self.setFocus()
+        else:
+            messageBox('Error', 'Please fill in all the fields!', 'critical', False)
+            self.setFocus()
 
     def cancel(self):
         if messageBox('Confirmation', 'Are you sure you want to exit?', 'question', True) == QtWidgets.QMessageBox.Ok:
