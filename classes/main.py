@@ -10,7 +10,7 @@ from classes.dialogBoxes import *
 from classes.object import *
 from classes.tableModel import *
 from ui import login, applicantDashboard, managerDashboard, managerApplicantLog, managerTeamMembers, \
-    managerMemberProfile, managerAddNewMember, adminManagerProfiles, adminRegisterManager
+    managerMemberProfile, managerAddNewMember, managerEditMemberProfile, adminManagerProfiles, adminRegisterManager
 
 
 def verifyUsername(username):
@@ -395,13 +395,15 @@ class managerTeamMembersWindow(managerTeamMembers.Ui_MainWindow, QtWidgets.QMain
                 memberName, memberID, teamName, memberDOB, memberAge, memberMobileNumber, memberEmail, dleaderName = result
 
             managerMemberProfileWindow.label_memberName.setText(f'{memberName}')
-            managerMemberProfileWindow.label_memberID.setText(f'Member ID: {memberID}')
-            managerMemberProfileWindow.label_teamName.setText(f'Team: {teamName}')
-            managerMemberProfileWindow.label_dob.setText(f'Date of Birth: {memberDOB}')
-            managerMemberProfileWindow.label_age.setText(f'Age: {memberAge}')
-            managerMemberProfileWindow.label_mobileNumber.setText(f'Mobile Number: {memberMobileNumber}')
-            managerMemberProfileWindow.label_emailAddress.setText(f'Email Address: {memberEmail}')
-            managerMemberProfileWindow.label_dLeader.setText(f'Discipleship Leader: {dleaderName}')
+            managerMemberProfileWindow.label_memberID_filler.setText(f'{memberID}')
+            managerMemberProfileWindow.label_team_filler.setText(f'{teamName}')
+            managerMemberProfileWindow.label_dob_filler.setText(f'{memberDOB}')
+            managerMemberProfileWindow.label_age_filler.setText(f'{memberAge}')
+            managerMemberProfileWindow.label_mobileNumber_filler.setText(f'{memberMobileNumber}')
+            managerMemberProfileWindow.label_email_filler.setText(f'{memberEmail}')
+            managerMemberProfileWindow.label_dLeader_filler.setText(f'{dleaderName}')
+
+            managerMemberProfileWindow.setWindowTitle(f'{memberName}')
 
             managerMemberProfileWindow.show()
 
@@ -419,12 +421,123 @@ class managerMemberProfileWindow(managerMemberProfile.Ui_MainWindow, QtWidgets.Q
         # slots and signals
 
         # buttons
+        self.btn_editProfile.clicked.connect(self.editProfile)
         self.btn_close.clicked.connect(self.backToDashboard)
+
+    def editProfile(self):
+        memberID = self.label_memberID_filler.text()
+
+        # change UI details in manager edit member profile
+        result = managers.fetchMemberDetails(memberID)
+        if result:
+            memberName, memberID, teamName, memberDOB, memberAge, memberMobileNumber, memberEmail, dleaderName = result
+
+        if teamName == 'Camera & Graphics':
+            teamIndex = 1
+        elif teamName == 'Sounds & Lights':
+            teamIndex = 2
+        elif teamName == 'Stage Management':
+            teamIndex = 3
+        else:
+            teamIndex = 0
+
+        managerEditMemberProfileWindow.label_memberName.setText(f'{memberName}')
+        managerEditMemberProfileWindow.label_memberID_filler.setText(f'{memberID}')
+        managerEditMemberProfileWindow.combo_teamSelect.setCurrentIndex(teamIndex)
+        # dleader
+        managerEditMemberProfileWindow.line_mobileNumber.setPlaceholderText(f'{memberMobileNumber}')
+        managerEditMemberProfileWindow.date_dob.setDate(memberDOB)
+        managerEditMemberProfileWindow.label_age_filler.setText(f'{memberAge}')
+        managerEditMemberProfileWindow.line_email.setPlaceholderText(f'{memberEmail}')
+
+        managerEditMemberProfileWindow.setWindowTitle(f'Editing {memberName}')
+
+        managerEditMemberProfileWindow.show()
+        managerMemberProfileWindow.setFocus()
 
     def backToDashboard(self):
         managerTeamMembersWindow.show()
         self.close()
         managerTeamMembersWindow.setFocus()
+
+
+class managerEditMemberProfileWindow(managerEditMemberProfile.Ui_MainWindow, QtWidgets.QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+
+        # slots and signals
+
+        # text edits
+        self.line_mobileNumber.textChanged.connect(self.printMobileNumber)
+        self.line_email.textChanged.connect(self.printEmail)
+
+        # buttons
+        self.btn_saveChanges.clicked.connect(self.saveChanges)
+        self.btn_cancel.clicked.connect(self.cancel)
+
+        # date entry
+        self.date_dob.setCalendarPopup(True)
+        self.date_dob.dateChanged.connect(self.printDob)
+
+        # validators
+        self.line_mobileNumber.setValidator(QtGui.QIntValidator())
+
+    def printMobileNumber(self):
+        self.line_mobileNumber.setText(self.line_mobileNumber.text())
+
+    def printEmail(self):
+        self.line_email.setText(self.line_email.text())
+
+    def printDLeader(self):
+        dLeader = self.combo_dLeader.currentText()
+        self.combo_dLeader.setCurrentText(dLeader)
+
+    def teamSelect(self):
+        team = self.combo_teamSelect.currentText()
+        self.combo_teamSelect.setCurrentText(team)
+
+    def printDob(self):
+        self.date_dob.setDate(self.date_dob.date())
+
+    def saveChanges(self):
+        member = self.label_memberID_filler.text()
+
+        team = self.combo_teamSelect.currentText()
+        dleaderIndex = self.combo_dLeader.currentText()
+        dob = self.date_dob.text()
+        mobileNumber = self.line_mobileNumber.text()
+        email = self.line_email.text()
+
+        if team != 'Select Option':
+            if team == 'Camera & Graphics':
+                teamIndex = '1'
+            elif team == 'Sounds & Lights':
+                teamIndex = '2'
+            elif team == 'Stage Management':
+                teamIndex = '3'
+        else:
+            teamIndex = None
+
+        if dleaderIndex == '':
+            dleaderIndex = None
+
+        if email == '':
+            email = None
+
+        if messageBox('Confirmation', 'Are you sure you want to save changes?', 'question', True) == QtWidgets.QMessageBox.Ok:
+            managers.editMemberProfile(teamIndex, dleaderIndex, dob, mobileNumber, email, member)
+            messageBox('Success!', 'Changes saved successfully!', 'information', False)
+        else:
+            self.setFocus()
+
+    def cancel(self):
+        if messageBox('Confirmation', 'Are you sure you want to exit?', 'question', True) == QtWidgets.QMessageBox.Ok:
+            managerMemberProfileWindow.show()
+            self.close()
+            managerMemberProfileWindow.setFocus()
+        else:
+            self.setFocus()
 
 
 class managerAddNewMemberWindow(managerAddNewMember.Ui_MainWindow, QtWidgets.QMainWindow):
@@ -678,6 +791,7 @@ if __name__ == '__main__':
     managerTeamMembersWindow = managerTeamMembersWindow()
     managerAddNewMemberWindow = managerAddNewMemberWindow()
     managerMemberProfileWindow = managerMemberProfileWindow()
+    managerEditMemberProfileWindow = managerEditMemberProfileWindow()
     adminManagerProfilesWindow = adminManagerProfilesWindow()
     adminRegisterManagerWindow = adminRegisterManagerWindow()
 

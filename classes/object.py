@@ -126,8 +126,8 @@ class managers:
         with ConnectionPool() as cursor:
             cursor.execute('''INSERT INTO member("memberFirstName", "memberSurname", "memberDOB", "memberMobileNumber",
             "teamID", "memberEmail", "dleaderID") VALUES(%s,%s,%s,%s,%s,%s,%s)''', (firstName, lastName, dob,
-                                                                                   mobileNumber, team,
-                                                                                   email, dleaderIndex))
+                                                                                    mobileNumber, team,
+                                                                                    email, dleaderIndex))
 
     @staticmethod
     def fetchManagerDetails(user):
@@ -145,9 +145,7 @@ class managers:
     @staticmethod
     def removeApplicant(applicantID):
         with ConnectionPool() as cursor:
-            cursor.execute('''
-            DELETE FROM applicant WHERE "applicantID" = %s
-            ''', (applicantID,))
+            cursor.execute('''DELETE FROM applicant WHERE "applicantID" = %s''', (applicantID,))
 
     @staticmethod
     def fetchMemberDetails(member):
@@ -171,6 +169,19 @@ class managers:
             memberEmail = row[6] if row[6] is not None else 'No email provided.'
             dleaderName = row[7] if row[7] != ", " else 'No DLeader assigned.'
             return memberName, memberID, teamName, memberDOB, memberAge, memberMobileNumber, memberEmail, dleaderName
+
+    @staticmethod
+    def editMemberProfile(teamID, dleaderID, dob, mobileNumber, email, member):
+        with ConnectionPool() as cursor:
+            cursor.execute('''
+            UPDATE member
+            SET "memberDOB" = CASE WHEN %s = '' THEN "memberDOB" ELSE %s END, 
+                "memberMobileNumber" = CASE WHEN %s = '' THEN "memberMobileNumber" ELSE %s END, 
+                "memberEmail" = CASE WHEN %s = '' THEN "memberEmail" ELSE %s END, 
+                "dleaderID" = %s, 
+                "teamID" = %s
+            WHERE "memberID" = %s''',
+                           (dob, dob, mobileNumber, mobileNumber, email, email, dleaderID, teamID, member))
 
 
 class administrators:
@@ -196,7 +207,6 @@ class administrators:
     def removeManager(manID):
         with ConnectionPool() as cursor:
             cursor.execute('''DELETE FROM manager WHERE "managerID" = %s''', (manID,))
-
 
 
 if __name__ == '__main__':
