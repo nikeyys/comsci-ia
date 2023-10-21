@@ -60,14 +60,14 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="btn_pendingApps">
+        <widget class="QPushButton" name="btn_applicantLog">
          <property name="font">
           <font>
            <pointsize>10</pointsize>
           </font>
          </property>
          <property name="text">
-          <string>Pending Applications</string>
+          <string>Applicant Log</string>
          </property>
         </widget>
        </item>
@@ -233,6 +233,19 @@
       </rect>
      </property>
      <layout class="QGridLayout" name="gLayout_chartsAndTables">
+      <item row="1" column="0">
+       <widget class="QTableView" name="tbl_latestUpdates"/>
+      </item>
+      <item row="1" column="1">
+       <widget class="QWidget" name="chart_memberStats" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+       </widget>
+      </item>
       <item row="0" column="0">
        <widget class="QLabel" name="label_latestUpdates">
         <property name="font">
@@ -261,21 +274,8 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="0">
-       <widget class="QTableView" name="tbl_latestUpdates"/>
-      </item>
-      <item row="1" column="1">
-       <widget class="QWidget" name="chart_memberStats" native="true">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-       </widget>
-      </item>
       <item row="2" column="0">
-       <widget class="QLabel" name="label_recentApplications">
+       <widget class="QLabel" name="label_pendingApplications">
         <property name="font">
          <font>
           <pointsize>16</pointsize>
@@ -284,12 +284,12 @@
          </font>
         </property>
         <property name="text">
-         <string>Recent Applications</string>
+         <string>Pending Applications</string>
         </property>
        </widget>
       </item>
-      <item row="3" column="0">
-       <widget class="QTableView" name="tbl_recentApplications"/>
+      <item row="3" column="0" colspan="2">
+       <widget class="QTableView" name="tbl_pendingApplications"/>
       </item>
      </layout>
     </widget>

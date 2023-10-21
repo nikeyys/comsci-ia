@@ -37,8 +37,10 @@ class applicants:
     @staticmethod
     def getPreviousApplications():
         with ConnectionPool() as cursor:
-            cursor.execute(
-                '''SELECT "applicationID", "applicationDate", "teamID", "applicationStatus" FROM application''', ())
+            cursor.execute('''
+            SELECT "applicationID", "applicationDate", team."teamName", "applicationStatus" 
+            FROM application
+            INNER JOIN team ON application."teamID" = team."teamID"''', ())
             return cursor.fetchall()
 
     @staticmethod
@@ -71,11 +73,25 @@ class managers:
         with ConnectionPool() as cursor:
             cursor.execute('''
             SELECT "applicationID", CONCAT(applicant."applicantFirstName", ' ',
-            applicant."applicantSurname") AS "applicantName", "applicationDate", applicant."teamID" 
+            applicant."applicantSurname") AS "applicantName", "applicationDate", team."teamName" 
             FROM application
             INNER JOIN applicant ON application."applicantID" = applicant."applicantID"
-            WHERE application."applicationStatus" = 'Pending' AND (applicant."applicantFirstName" ILIKE %s 
-            OR applicant."applicantSurname" ILIKE %s)
+            INNER JOIN team ON application."teamID" = team."teamID"
+            WHERE application."applicationStatus" = 'Pending'  /* AND (applicant."applicantFirstName" ILIKE %s 
+            OR applicant."applicantSurname" ILIKE %s) */
+            ORDER BY "applicationID"''', (f'%{keyword}%', f'%{keyword}%'))
+            return cursor.fetchall()
+
+    @staticmethod
+    def getApplicants(keyword=None):
+        with ConnectionPool() as cursor:
+            cursor.execute('''
+            SELECT applicant."applicantID", CONCAT(applicant."applicantFirstName", ' ', applicant."applicantSurname") 
+            AS "applicantName", "applicantMobileNumber", team."teamName"
+            FROM applicant
+            INNER JOIN application ON applicant."applicantID" = application."applicantID"
+            INNER JOIN team ON applicant."teamID" = team."teamID"
+            WHERE applicant."applicantFirstName" ILIKE %s OR applicant."applicantSurname" ILIKE %s
             ORDER BY "applicationID"''', (f'%{keyword}%', f'%{keyword}%'))
             return cursor.fetchall()
 
@@ -126,6 +142,36 @@ class managers:
         else:
             return None
 
+    @staticmethod
+    def removeApplicant(applicantID):
+        with ConnectionPool() as cursor:
+            cursor.execute('''
+            DELETE FROM applicant WHERE "applicantID" = %s
+            ''', (applicantID,))
+
+    @staticmethod
+    def fetchMemberDetails(member):
+        with ConnectionPool() as cursor:
+            cursor.execute('''
+            SELECT CONCAT(UPPER("memberSurname"), ', ', "memberFirstName") AS "memberName", member."memberID", 
+            team."teamName", "memberDOB", ((CURRENT_DATE- "memberDOB")/365) AS "memberAge", "memberMobileNumber", 
+            "memberEmail", CONCAT("dleaderSurname", ', ', "dleaderFirstName") AS "dleaderName"
+            FROM member
+            INNER JOIN team ON member."teamID" = team."teamID"
+            LEFT JOIN dleader ON dleader."dleaderID" = member."dleaderID"
+            WHERE "memberID" = %s''', (member,))
+            row = cursor.fetchone()
+        if row is not None:
+            memberName = row[0]
+            memberID = row[1]
+            teamName = row[2]
+            memberDOB = row[3]
+            memberAge = row[4]
+            memberMobileNumber = row[5]
+            memberEmail = row[6] if row[6] is not None else 'No email provided.'
+            dleaderName = row[7] if row[7] != ", " else 'No DLeader assigned.'
+            return memberName, memberID, teamName, memberDOB, memberAge, memberMobileNumber, memberEmail, dleaderName
+
 
 class administrators:
     @staticmethod
@@ -140,7 +186,8 @@ class administrators:
             cursor.execute('''
                 SELECT "managerID", CONCAT("managerFirstName", ' ', "managerSurname") AS "managerName", "managerUsername"
                 FROM manager
-                WHERE manager."managerFirstName" ILIKE %s OR manager."managerSurname" ILIKE %s OR manager."managerUsername" ILIKE %s
+                WHERE manager."managerFirstName" ILIKE %s OR manager."managerSurname" ILIKE %s OR 
+                manager."managerUsername" ILIKE %s
                 ORDER BY "managerID"
                 ''', (f'%{keyword}%', f'%{keyword}%', f'%{keyword}%'))
             return cursor.fetchall()

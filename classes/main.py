@@ -9,8 +9,8 @@ from PyQt5.QtWidgets import QApplication
 from classes.dialogBoxes import *
 from classes.object import *
 from classes.tableModel import *
-from ui import login, applicantDashboard, managerDashboard, managerPendingApplications, managerTeamMembers, \
-    managerAddNewMember, adminManagerProfiles, adminRegisterManager
+from ui import login, applicantDashboard, managerDashboard, managerApplicantLog, managerTeamMembers, \
+    managerMemberProfile, managerAddNewMember, adminManagerProfiles, adminRegisterManager
 
 
 def verifyUsername(username):
@@ -184,8 +184,12 @@ class applicantDashboardWindow(applicantDashboard.Ui_MainWindow, QtWidgets.QMain
         header = ['Application ID', 'Date', 'Team', 'Status']
         data = applicants.getPreviousApplications()
         self.previousApplicationsTable = tableModel(self, data, header)
+
         self.tbl_prevApplications.setModel(self.previousApplicationsTable)
         self.tbl_prevApplications.horizontalHeader().resizeSections(QtWidgets.QHeaderView.ResizeToContents)
+        self.tbl_prevApplications.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        self.tbl_prevApplications.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
+        self.tbl_prevApplications.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.Stretch)
 
     def logout(self):
         if messageBox('Confirmation', 'Are you sure you want to exit?', 'question', True) == QtWidgets.QMessageBox.Ok:
@@ -200,10 +204,12 @@ class managerDashboardWindow(managerDashboard.Ui_MainWindow, QtWidgets.QMainWind
         super().__init__()
         self.setupUi(self)
 
+        self.tbl_pendingApplications.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+
         # slots and signals
 
         # buttons
-        self.btn_pendingApps.clicked.connect(self.pendingApplications)
+        self.btn_applicantLog.clicked.connect(self.applicantLog)
         self.btn_teamMembers.clicked.connect(self.teamMembers)
         self.btn_adminManagerProfile.clicked.connect(self.adminManagerProfiles)
         self.btn_logout.clicked.connect(self.logout)
@@ -215,10 +221,11 @@ class managerDashboardWindow(managerDashboard.Ui_MainWindow, QtWidgets.QMainWind
 
         # show tables
         self.showMemberStats()
+        self.pendingApplications()
 
-    def pendingApplications(self):
-        managerPendingApplicationsWindow.show()
-        managerPendingApplicationsWindow.setFocus()
+    def applicantLog(self):
+        managerApplicantLogWindow.show()
+        managerApplicantLogWindow.setFocus()
 
     def teamMembers(self):
         managerTeamMembersWindow.show()
@@ -227,6 +234,19 @@ class managerDashboardWindow(managerDashboard.Ui_MainWindow, QtWidgets.QMainWind
     def adminManagerProfiles(self):
         adminManagerProfilesWindow.show()
         adminManagerProfilesWindow.setFocus()
+
+    def pendingApplications(self, keyword=None):
+        header = ['Application ID', 'Applicant Name', 'Date of Application', 'Team']
+        data = managers.getPendingApplications(keyword)
+
+        if not data:
+            data = ['', '', '', '']
+
+        self.pendingApplicationsTable = tableModel(self, data, header)
+        self.tbl_pendingApplications.setModel(self.pendingApplicationsTable)
+        self.tbl_pendingApplications.horizontalHeader().resizeSections(QtWidgets.QHeaderView.ResizeToContents)
+        self.tbl_pendingApplications.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        self.tbl_pendingApplications.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.Stretch)
 
     def showMemberStats(self):
         teams, memberCounts = managers.getMemberStats()
@@ -266,34 +286,51 @@ class managerDashboardWindow(managerDashboard.Ui_MainWindow, QtWidgets.QMainWind
             self.setFocus()
 
 
-class managerPendingApplicationsWindow(managerPendingApplications.Ui_MainWindow, QtWidgets.QMainWindow):
+class managerApplicantLogWindow(managerApplicantLog.Ui_MainWindow, QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
 
-        self.tbl_pendingApplications.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.tbl_applicantLog.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
 
-        self.pendingApplications()
+        self.applicantLog()
 
         # slots and signals
 
         # buttons
+        self.btn_delApplicant.clicked.connect(self.deleteApplicant)
         self.btn_backToDashboard.clicked.connect(self.backToDashboard)
 
         # line edits
-        self.line_searchBar.textChanged.connect(self.pendingApplications)
+        self.line_searchBar.textChanged.connect(self.applicantLog)
 
-    def pendingApplications(self, keyword=None):
+    def applicantLog(self, keyword=None):
         keyword = self.line_searchBar.text()
-        header = ['Application ID', 'Applicant Name', 'Date', 'Team']
-        data = managers.getPendingApplications(keyword)
+        header = ['Applicant ID', 'Applicant Name', 'Mobile Number', 'Team']
+        data = managers.getApplicants(keyword)
 
         if not data:
             data = ['', '', '', '']
 
         self.pendingApplicationsTable = tableModel(self, data, header)
-        self.tbl_pendingApplications.setModel(self.pendingApplicationsTable)
-        self.tbl_pendingApplications.horizontalHeader().resizeSections(QtWidgets.QHeaderView.ResizeToContents)
+        self.tbl_applicantLog.setModel(self.pendingApplicationsTable)
+        self.tbl_applicantLog.horizontalHeader().resizeSections(QtWidgets.QHeaderView.ResizeToContents)
+        self.tbl_applicantLog.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        self.tbl_applicantLog.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.Stretch)
+
+    def deleteApplicant(self):
+        selectedApplicantIndex = self.tbl_applicantLog.selectionModel().currentIndex()
+
+        if selectedApplicantIndex.isValid():
+            applicationID = self.pendingApplicationsTable.data(
+                self.pendingApplicationsTable.index(selectedApplicantIndex.row(), 0), QtCore.Qt.DisplayRole)
+            applicantName = self.pendingApplicationsTable.data(
+                self.pendingApplicationsTable.index(selectedApplicantIndex.row(), 1), QtCore.Qt.DisplayRole)
+            if messageBox('Confirmation', f'Are you sure you want to delete [{applicantName}]? \n'
+                                          f'This action cannot be undone.', 'question',
+                          True) == QtWidgets.QMessageBox.Ok:
+                managers.removeApplicant(applicationID)
+                messageBox('Success', f'{applicantName} has been removed.', 'information')
 
     def backToDashboard(self):
         self.close()
@@ -319,6 +356,9 @@ class managerTeamMembersWindow(managerTeamMembers.Ui_MainWindow, QtWidgets.QMain
         # line edits
         self.line_searchBar.textChanged.connect(self.teamMembers)
 
+        # row click
+        self.tbl_teamMembers.doubleClicked.connect(self.viewMemberProfile)
+
     def teamMembers(self, keyword=None):
         keyword = self.line_searchBar.text()
         header = ['Member ID', 'Member Name', 'Team']
@@ -330,19 +370,61 @@ class managerTeamMembersWindow(managerTeamMembers.Ui_MainWindow, QtWidgets.QMain
         self.teamMembersTable = tableModel(self, data, header)
         self.tbl_teamMembers.setModel(self.teamMembersTable)
         self.tbl_teamMembers.horizontalHeader().resizeSections(QtWidgets.QHeaderView.ResizeToContents)
+        self.tbl_teamMembers.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        self.tbl_teamMembers.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
 
     def applyFilters(self):
         teamFilter = self.combo_teamSelect.currentText()
         self.teamMembersTable.setTeamFilters(teamFilter)
+
+    def managerAddNewMember(self):
+        managerAddNewMemberWindow.show()
+        managerAddNewMemberWindow.setFocus()
+
+    def viewMemberProfile(self):
+        selectedMemberIndex = self.tbl_teamMembers.selectionModel().currentIndex()
+
+        if selectedMemberIndex.isValid():
+            member = self.teamMembersTable.data(
+                self.teamMembersTable.index(selectedMemberIndex.row(), 0), QtCore.Qt.DisplayRole)
+            print(member)
+
+            # change UI details in manager member profile
+            result = managers.fetchMemberDetails(member)
+            if result:
+                memberName, memberID, teamName, memberDOB, memberAge, memberMobileNumber, memberEmail, dleaderName = result
+
+            managerMemberProfileWindow.label_memberName.setText(f'{memberName}')
+            managerMemberProfileWindow.label_memberID.setText(f'Member ID: {memberID}')
+            managerMemberProfileWindow.label_teamName.setText(f'Team: {teamName}')
+            managerMemberProfileWindow.label_dob.setText(f'Date of Birth: {memberDOB}')
+            managerMemberProfileWindow.label_age.setText(f'Age: {memberAge}')
+            managerMemberProfileWindow.label_mobileNumber.setText(f'Mobile Number: {memberMobileNumber}')
+            managerMemberProfileWindow.label_emailAddress.setText(f'Email Address: {memberEmail}')
+            managerMemberProfileWindow.label_dLeader.setText(f'Discipleship Leader: {dleaderName}')
+
+            managerMemberProfileWindow.show()
 
     def backToDashboard(self):
         managerDashboardWindow.show()
         self.close()
         managerDashboardWindow.setFocus()
 
-    def managerAddNewMember(self):
-        managerAddNewMemberWindow.show()
-        managerAddNewMemberWindow.setFocus()
+
+class managerMemberProfileWindow(managerMemberProfile.Ui_MainWindow, QtWidgets.QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+
+        # slots and signals
+
+        # buttons
+        self.btn_close.clicked.connect(self.backToDashboard)
+
+    def backToDashboard(self):
+        managerTeamMembersWindow.show()
+        self.close()
+        managerTeamMembersWindow.setFocus()
 
 
 class managerAddNewMemberWindow(managerAddNewMember.Ui_MainWindow, QtWidgets.QMainWindow):
@@ -462,7 +544,6 @@ class adminManagerProfilesWindow(adminManagerProfiles.Ui_MainWindow, QtWidgets.Q
         # buttons
         self.btn_backToDashboard.clicked.connect(self.backToDashboard)
         self.btn_registerManager.clicked.connect(self.adminRegisterManager)
-        # self.btn_removeManager.clicked.connect(self.removeManager)
 
         # row click
         self.btn_removeManager.clicked.connect(self.deleteManagerProfile)
@@ -481,17 +562,20 @@ class adminManagerProfilesWindow(adminManagerProfiles.Ui_MainWindow, QtWidgets.Q
         self.managerProfilesTable = tableModel(self, data, header)
         self.tbl_managerProfiles.setModel(self.managerProfilesTable)
         self.tbl_managerProfiles.horizontalHeader().resizeSections(QtWidgets.QHeaderView.ResizeToContents)
+        self.tbl_managerProfiles.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        self.tbl_managerProfiles.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
 
     def deleteManagerProfile(self):
         selectedManagerIndex = self.tbl_managerProfiles.selectionModel().currentIndex()
 
         if selectedManagerIndex.isValid():
-            managerID = self.managerProfilesTable.data(self.managerProfilesTable.index(selectedManagerIndex.row(), 0),
-                                                       QtCore.Qt.DisplayRole)
-            managerName = self.managerProfilesTable.data(self.managerProfilesTable.index(selectedManagerIndex.row(), 1),
-                                                         QtCore.Qt.DisplayRole)
+            managerID = self.managerProfilesTable.data(
+                self.managerProfilesTable.index(selectedManagerIndex.row(), 0), QtCore.Qt.DisplayRole)
+            managerName = self.managerProfilesTable.data(
+                self.managerProfilesTable.index(selectedManagerIndex.row(), 1), QtCore.Qt.DisplayRole)
             if messageBox('Confirmation', f'Are you sure you want to delete [{managerName}]? \n'
-                                          f'This action cannot be undone.', 'question', True) == QtWidgets.QMessageBox.Ok:
+                                          f'This action cannot be undone.', 'question',
+                          True) == QtWidgets.QMessageBox.Ok:
                 administrators.removeManager(managerID)
                 messageBox('Success', f'{managerName} has been removed.', 'information')
 
@@ -590,9 +674,10 @@ if __name__ == '__main__':
     loginWindow = loginWindow()
     applicantDashboardWindow = applicantDashboardWindow()
     managerDashboardWindow = managerDashboardWindow()
-    managerPendingApplicationsWindow = managerPendingApplicationsWindow()
+    managerApplicantLogWindow = managerApplicantLogWindow()
     managerTeamMembersWindow = managerTeamMembersWindow()
     managerAddNewMemberWindow = managerAddNewMemberWindow()
+    managerMemberProfileWindow = managerMemberProfileWindow()
     adminManagerProfilesWindow = adminManagerProfilesWindow()
     adminRegisterManagerWindow = adminRegisterManagerWindow()
 
