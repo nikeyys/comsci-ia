@@ -10,7 +10,8 @@ from classes.dialogBoxes import *
 from classes.object import *
 from classes.tableModel import *
 from ui import login, applicantDashboard, managerDashboard, managerApplicantLog, managerTeamMembers, \
-    managerMemberProfile, managerAddNewMember, managerEditMemberProfile, adminManagerProfiles, adminRegisterManager
+    managerMemberProfile, managerAddNewMember, managerEditMemberProfile, adminManagerProfiles, adminRegisterManager, \
+    managerDLeaderInfoBank, managerAddNewDLeader, managerDLeaderProfile, managerEditDLeaderProfile
 
 
 def verifyUsername(username):
@@ -211,6 +212,7 @@ class managerDashboardWindow(managerDashboard.Ui_MainWindow, QtWidgets.QMainWind
         # buttons
         self.btn_applicantLog.clicked.connect(self.applicantLog)
         self.btn_teamMembers.clicked.connect(self.teamMembers)
+        self.btn_dLeaderInfoBank.clicked.connect(self.dLeaderInfoBank)
         self.btn_adminManagerProfile.clicked.connect(self.adminManagerProfiles)
         self.btn_logout.clicked.connect(self.logout)
 
@@ -230,6 +232,10 @@ class managerDashboardWindow(managerDashboard.Ui_MainWindow, QtWidgets.QMainWind
     def teamMembers(self):
         managerTeamMembersWindow.show()
         managerTeamMembersWindow.setFocus()
+
+    def dLeaderInfoBank(self):
+        managerDLeaderInfoBankWindow.show()
+        managerDLeaderInfoBankWindow.setFocus()
 
     def adminManagerProfiles(self):
         adminManagerProfilesWindow.show()
@@ -525,9 +531,13 @@ class managerEditMemberProfileWindow(managerEditMemberProfile.Ui_MainWindow, QtW
         if email == '':
             email = None
 
-        if messageBox('Confirmation', 'Are you sure you want to save changes?', 'question', True) == QtWidgets.QMessageBox.Ok:
+        if messageBox('Confirmation', 'Are you sure you want to save changes?', 'question',
+                      True) == QtWidgets.QMessageBox.Ok:
             managers.editMemberProfile(teamIndex, dleaderIndex, dob, mobileNumber, email, member)
             messageBox('Success!', 'Changes saved successfully!', 'information', False)
+            self.line_mobileNumber.clear()
+            self.line_email.clear()
+            self.close()
         else:
             self.setFocus()
 
@@ -643,6 +653,241 @@ class managerAddNewMemberWindow(managerAddNewMember.Ui_MainWindow, QtWidgets.QMa
             self.setFocus()
 
 
+class managerDLeaderInfoBankWindow(managerDLeaderInfoBank.Ui_MainWindow, QtWidgets.QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+
+        self.tbl_dLeaderTable.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+
+        # slots and signals
+
+        # buttons
+        self.btn_addNewDLeader.clicked.connect(self.addNewDLeader)
+        self.btn_removeDLeader.clicked.connect(self.removeDLeader)
+        self.btn_backToDashboard.clicked.connect(self.backToDashboard)
+
+        # row click
+        self.tbl_dLeaderTable.doubleClicked.connect(self.viewDLeaderProfile)
+
+        # line edits
+        self.line_searchBar.textChanged.connect(self.dLeaderInfoBank)
+
+        self.dLeaderInfoBank()
+
+    def dLeaderInfoBank(self, keyword=None):
+        keyword = self.line_searchBar.text()
+        header = ['DLeader ID', 'Discipleship Leader Name']
+        data = managers.getDLeaders(keyword)
+
+        if not data:
+            data = ['', '']
+
+        self.dLeaderTable = tableModel(self, data, header)
+        self.tbl_dLeaderTable.setModel(self.dLeaderTable)
+        self.tbl_dLeaderTable.horizontalHeader().resizeSections(QtWidgets.QHeaderView.ResizeToContents)
+        self.tbl_dLeaderTable.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+
+    def addNewDLeader(self):
+        managerAddNewDLeaderWindow.show()
+        managerAddNewDLeaderWindow.setFocus()
+
+    def viewDLeaderProfile(self):
+        selectedDLeaderIndex = self.tbl_dLeaderTable.selectionModel().currentIndex()
+
+        if selectedDLeaderIndex.isValid():
+            dleaderID = self.dLeaderTable.data(
+                self.dLeaderTable.index(selectedDLeaderIndex.row(), 0), QtCore.Qt.DisplayRole)
+            print(dleaderID)
+
+            # change UI details in manager dleader profile
+            result = managers.fetchDLeaderDetails(dleaderID)
+            if result:
+                dleaderName, dleaderID, dleaderMobileNumber, dleaderEmail = result
+
+            managerDLeaderProfileWindow.label_dLeaderName.setText(f'{dleaderName}')
+            managerDLeaderProfileWindow.label_dLeaderID_filler.setText(f'{dleaderID}')
+            managerDLeaderProfileWindow.label_mobileNumber_filler.setText(f'{dleaderMobileNumber}')
+            managerDLeaderProfileWindow.label_email_filler.setText(f'{dleaderEmail}')
+
+            managerDLeaderProfileWindow.setWindowTitle(f'{dleaderName}')
+
+            managerDLeaderProfileWindow.show()
+
+    def removeDLeader(self):
+        selectedDLeaderIndex = self.tbl_dLeaderTable.selectionModel().currentIndex()
+
+        if selectedDLeaderIndex.isValid():
+            dleaderID = self.dLeaderTable.data(
+                self.dLeaderTable.index(selectedDLeaderIndex.row(), 0), QtCore.Qt.DisplayRole)
+            dleaderName = self.dLeaderTable.data(
+                self.dLeaderTable.index(selectedDLeaderIndex.row(), 1), QtCore.Qt.DisplayRole)
+            if messageBox('Confirmation', f'Are you sure you want to delete [{dleaderName}]? \n'
+                                          f'This action cannot be undone.', 'question',
+                          True) == QtWidgets.QMessageBox.Ok:
+                managers.removeDLeader(dleaderID)
+                messageBox('Success', f'{dleaderName} has been removed.', 'information')
+
+    def backToDashboard(self):
+        managerDashboardWindow.show()
+        self.close()
+        managerDashboardWindow.setFocus()
+
+
+class managerDLeaderProfileWindow(managerDLeaderProfile.Ui_MainWindow, QtWidgets.QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+
+        # slots and signals
+
+        # buttons
+        self.btn_editProfile.clicked.connect(self.editProfile)
+        self.btn_close.clicked.connect(self.cancel)
+
+    def editProfile(self):
+        dleaderID = self.label_dLeaderID_filler.text()
+
+        # change UI details in manager edit dleader profile
+        result = managers.fetchDLeaderDetails(dleaderID)
+        if result:
+            dleaderName, dleaderID, dleaderMobileNumber, dleaderEmail = result
+
+        managerEditDLeaderProfileWindow.label_dLeaderName.setText(f'{dleaderName}')
+        managerEditDLeaderProfileWindow.label_dLeaderID_filler.setText(f'{dleaderID}')
+        managerEditDLeaderProfileWindow.line_mobileNumber.setPlaceholderText(f'{dleaderMobileNumber}')
+        managerEditDLeaderProfileWindow.line_email.setPlaceholderText(f'{dleaderEmail}')
+
+        managerEditDLeaderProfileWindow.setWindowTitle(f'Editing {dleaderName}')
+
+        managerEditDLeaderProfileWindow.show()
+        managerDLeaderProfileWindow.setFocus()
+
+    def cancel(self):
+        managerDLeaderInfoBankWindow.show()
+        self.close()
+        managerDLeaderInfoBankWindow.setFocus()
+
+
+class managerAddNewDLeaderWindow(managerAddNewDLeader.Ui_MainWindow, QtWidgets.QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+
+        # slots and signals
+
+        # buttons
+        self.btn_addNewDLeader.clicked.connect(self.addDLeader)
+        self.btn_cancel.clicked.connect(self.cancel)
+
+        # line edits
+        self.line_firstName.textChanged.connect(self.printFirstName)
+        self.line_surname.textChanged.connect(self.printSurname)
+        self.line_mobileNumber.textChanged.connect(self.printMobileNumber)
+        self.line_email.textChanged.connect(self.printEmail)
+
+        # validators
+        self.line_mobileNumber.setValidator(QtGui.QIntValidator())
+
+    def printFirstName(self):
+        self.line_firstName.setText(self.line_firstName.text())
+
+    def printSurname(self):
+        self.line_surname.setText(self.line_surname.text())
+
+    def printMobileNumber(self):
+        self.line_mobileNumber.setText(self.line_mobileNumber.text())
+
+    def printEmail(self):
+        self.line_email.setText(self.line_email.text())
+
+    def addDLeader(self):
+        firstName = self.line_firstName.text()
+        surname = self.line_surname.text()
+        mobileNumber = self.line_mobileNumber.text()
+        email = self.line_email.text()
+
+        if firstName and surname and mobileNumber:
+            checkDuplicateName = managers.getDLeaders(firstName + surname)
+
+            if checkDuplicateName:
+                messageBox('Error', 'DLeader already exists!', 'critical', False)
+                self.setFocus()
+            elif messageBox('Confirmation', 'Are you sure you want to register this DLeader?', 'question', True) == \
+                    QtWidgets.QMessageBox.Ok:
+                managers.addNewDLeader(firstName, surname, mobileNumber, email)
+                messageBox('Success', 'DLeader successfully registered!', 'information', False)
+
+                managerDLeaderInfoBankWindow.show()
+                self.close()
+                managerDLeaderInfoBankWindow.setFocus()
+            else:
+                self.setFocus()
+        else:
+            messageBox('Error', 'Please fill in all the fields!', 'critical', False)
+            self.setFocus()
+
+    def cancel(self):
+        if messageBox('Confirmation', 'Are you sure you want to exit?', 'question', True) == QtWidgets.QMessageBox.Ok:
+            managerDLeaderInfoBankWindow.show()
+            self.close()
+            managerDLeaderInfoBankWindow.setFocus()
+        else:
+            self.setFocus()
+
+
+class managerEditDLeaderProfileWindow(managerEditDLeaderProfile.Ui_MainWindow, QtWidgets.QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+
+        # slots and signals
+
+        # text edits
+        self.line_mobileNumber.textChanged.connect(self.printMobileNumber)
+        self.line_email.textChanged.connect(self.printEmail)
+
+        # buttons
+        self.btn_saveChanges.clicked.connect(self.saveChanges)
+        self.btn_cancel.clicked.connect(self.cancel)
+
+        # validators
+        self.line_mobileNumber.setValidator(QtGui.QIntValidator())
+
+    def printMobileNumber(self):
+        self.line_mobileNumber.setText(self.line_mobileNumber.text())
+
+    def printEmail(self):
+        self.line_email.setText(self.line_email.text())
+
+    def saveChanges(self):
+        dleader = self.label_dLeaderID_filler.text()
+
+        mobileNumber = self.line_mobileNumber.text()
+        email = self.line_email.text()
+
+        if email == '':
+            email = None
+
+        if messageBox('Confirmation', 'Are you sure you want to save changes?', 'question', True) == QtWidgets.QMessageBox.Ok:
+            managers.editDLeaderProfile(mobileNumber, email, dleader)
+            messageBox('Success!', 'Changes saved successfully!', 'information', False)
+            self.line_mobileNumber.clear()
+            self.line_email.clear()
+            self.close()
+        else:
+            self.setFocus()
+
+    def cancel(self):
+        if messageBox('Confirmation', 'Are you sure you want to exit?', 'question', True) == QtWidgets.QMessageBox.Ok:
+            managerDLeaderInfoBankWindow.show()
+            self.close()
+            managerDLeaderInfoBankWindow.setFocus()
+        else:
+            self.setFocus()
+
+
+
 class adminManagerProfilesWindow(adminManagerProfiles.Ui_MainWindow, QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -686,11 +931,12 @@ class adminManagerProfilesWindow(adminManagerProfiles.Ui_MainWindow, QtWidgets.Q
                 self.managerProfilesTable.index(selectedManagerIndex.row(), 0), QtCore.Qt.DisplayRole)
             managerName = self.managerProfilesTable.data(
                 self.managerProfilesTable.index(selectedManagerIndex.row(), 1), QtCore.Qt.DisplayRole)
-            if messageBox('Confirmation', f'Are you sure you want to delete [{managerName}]? \n'
-                                          f'This action cannot be undone.', 'question',
-                          True) == QtWidgets.QMessageBox.Ok:
-                administrators.removeManager(managerID)
-                messageBox('Success', f'{managerName} has been removed.', 'information')
+            if administrators.getManagerProfiles(managerID):
+                if messageBox('Confirmation', f'Are you sure you want to delete [{managerName}]? \n'
+                                              f'This action cannot be undone.', 'question',
+                              True) == QtWidgets.QMessageBox.Ok:
+                    administrators.removeManager(managerID)
+                    messageBox('Success', f'{managerName} has been removed.', 'information')
 
     def adminRegisterManager(self):
         adminRegisterManagerWindow.show()
@@ -792,7 +1038,10 @@ if __name__ == '__main__':
     managerAddNewMemberWindow = managerAddNewMemberWindow()
     managerMemberProfileWindow = managerMemberProfileWindow()
     managerEditMemberProfileWindow = managerEditMemberProfileWindow()
-    adminManagerProfilesWindow = adminManagerProfilesWindow()
+    managerDLeaderInfoBankWindow = managerDLeaderInfoBankWindow()
+    managerAddNewDLeaderWindow = managerAddNewDLeaderWindow()
+    managerDLeaderProfileWindow = managerDLeaderProfileWindow()
+    managerEditDLeaderProfileWindow = managerEditDLeaderProfileWindow()
     adminRegisterManagerWindow = adminRegisterManagerWindow()
 
     loginWindow.show()

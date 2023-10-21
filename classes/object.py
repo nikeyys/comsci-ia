@@ -183,6 +183,49 @@ class managers:
             WHERE "memberID" = %s''',
                            (dob, dob, mobileNumber, mobileNumber, email, email, dleaderID, teamID, member))
 
+    @staticmethod
+    def getDLeaders(keyword):
+        with ConnectionPool() as cursor:
+            cursor.execute('''
+            SELECT "dleaderID", CONCAT("dleaderFirstName", ' ', "dleaderSurname") AS "dleaderName" FROM dleader
+            WHERE "dleaderFirstName" ILIKE %s OR "dleaderSurname" ILIKE %s''', (f'%{keyword}%', f'%{keyword}%'))
+            return cursor.fetchall()
+
+    @staticmethod
+    def fetchDLeaderDetails(dleader):
+        with ConnectionPool() as cursor:
+            cursor.execute('''
+            SELECT CONCAT(UPPER("dleaderSurname"), ', ', "dleaderFirstName") AS "dleaderName", "dleaderID", 
+            "dleaderMobileNumber", "dleaderEmail"
+            FROM dleader
+            WHERE "dleaderID" = %s''', (dleader,))
+            row = cursor.fetchone()
+        if row is not None:
+            dleaderName = row[0]
+            dleaderID = row[1]
+            dleaderMobileNumber = row[2]
+            dleaderEmail = row[3] if row[3] is not None else 'No email provided.'
+            return dleaderName, dleaderID, dleaderMobileNumber, dleaderEmail
+
+    @staticmethod
+    def addNewDLeader(firstName, surname, mobileNumber, email):
+        with ConnectionPool() as cursor:
+            cursor.execute('''INSERT INTO dleader("dleaderFirstName", "dleaderSurname", "dleaderMobileNumber", 
+            "dleaderEmail") VALUES (%s, %s, %s, %s)''', (firstName, surname, mobileNumber, email))
+
+    @staticmethod
+    def editDLeaderProfile(mobileNumber, email, dleader):
+        with ConnectionPool() as cursor:
+            cursor.execute('''UPDATE dleader
+            SET "dleaderMobileNumber" = CASE WHEN %s = '' THEN "dleaderMobileNumber" ELSE %s END, 
+                "dleaderEmail" = CASE WHEN %s IS NULL THEN "dleaderEmail" ELSE %s END
+            WHERE "dleaderID" = %s''', (mobileNumber, mobileNumber, email, email, dleader))
+
+    @staticmethod
+    def removeDLeader(dleaderID):
+        with ConnectionPool() as cursor:
+            cursor.execute('''DELETE FROM dleader WHERE "dleaderID" = %s''', (dleaderID,))
+
 
 class administrators:
     @staticmethod
