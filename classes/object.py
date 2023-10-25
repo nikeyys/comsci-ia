@@ -208,6 +208,17 @@ class managers:
             return dleaderName, dleaderID, dleaderMobileNumber, dleaderEmail
 
     @staticmethod
+    def fetchDLeaderMembers(dleader, keyword):
+        with ConnectionPool() as cursor:
+            cursor.execute('''
+            SELECT "memberID", CONCAT("memberFirstName", ' ', "memberSurname") AS "memberName", team."teamName"
+            FROM member
+            INNER JOIN team ON member."teamID" = team."teamID"
+            WHERE "dleaderID" = %s AND ("memberFirstName" ILIKE %s OR "memberSurname" ILIKE %s)''',
+                           (dleader, f'%{keyword}%', f'%{keyword}%'))
+            return cursor.fetchall()
+
+    @staticmethod
     def addNewDLeader(firstName, surname, mobileNumber, email):
         with ConnectionPool() as cursor:
             cursor.execute('''INSERT INTO dleader("dleaderFirstName", "dleaderSurname", "dleaderMobileNumber", 

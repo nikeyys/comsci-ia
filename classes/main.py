@@ -698,13 +698,14 @@ class managerDLeaderInfoBankWindow(managerDLeaderInfoBank.Ui_MainWindow, QtWidge
         if selectedDLeaderIndex.isValid():
             dleaderID = self.dLeaderTable.data(
                 self.dLeaderTable.index(selectedDLeaderIndex.row(), 0), QtCore.Qt.DisplayRole)
-            print(dleaderID)
 
             # change UI details in manager dleader profile
             result = managers.fetchDLeaderDetails(dleaderID)
             if result:
                 dleaderName, dleaderID, dleaderMobileNumber, dleaderEmail = result
 
+            managerDLeaderProfileWindow.setDLeaderID(dleaderID)
+            managerDLeaderProfileWindow.dMembers()
             managerDLeaderProfileWindow.label_dLeaderName.setText(f'{dleaderName}')
             managerDLeaderProfileWindow.label_dLeaderID_filler.setText(f'{dleaderID}')
             managerDLeaderProfileWindow.label_mobileNumber_filler.setText(f'{dleaderMobileNumber}')
@@ -738,6 +739,9 @@ class managerDLeaderProfileWindow(managerDLeaderProfile.Ui_MainWindow, QtWidgets
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+        self.dleaderID = None
+
+        self.tbl_dMembers.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
 
         # slots and signals
 
@@ -745,11 +749,29 @@ class managerDLeaderProfileWindow(managerDLeaderProfile.Ui_MainWindow, QtWidgets
         self.btn_editProfile.clicked.connect(self.editProfile)
         self.btn_close.clicked.connect(self.cancel)
 
-    def editProfile(self):
-        dleaderID = self.label_dLeaderID_filler.text()
+        # line edits
+        self.line_searchBar.textChanged.connect(self.dMembers)
 
+    def setDLeaderID(self, dleaderID):
+        self.dleaderID = dleaderID
+
+    def dMembers(self, keyword=None):
+        keyword = self.line_searchBar.text()
+        header = ['Member ID', 'Member Name', 'Team']
+        data = managers.fetchDLeaderMembers(self.dleaderID, keyword)
+
+        if not data:
+            data = [['', '', '']]
+
+        self.dMembersTable = tableModel(self, data, header)
+        self.tbl_dMembers.setModel(self.dMembersTable)
+        self.tbl_dMembers.horizontalHeader().resizeSections(QtWidgets.QHeaderView.ResizeToContents)
+        self.tbl_dMembers.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        self.tbl_dMembers.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
+
+    def editProfile(self):
         # change UI details in manager edit dleader profile
-        result = managers.fetchDLeaderDetails(dleaderID)
+        result = managers.fetchDLeaderDetails(self.dleaderID)
         if result:
             dleaderName, dleaderID, dleaderMobileNumber, dleaderEmail = result
 
@@ -807,7 +829,7 @@ class managerAddNewDLeaderWindow(managerAddNewDLeader.Ui_MainWindow, QtWidgets.Q
         mobileNumber = self.line_mobileNumber.text()
         email = self.line_email.text()
 
-        if firstName and surname and mobileNumber:
+        if firstName and surname and mobileNumber and email:
             checkDuplicateName = managers.getDLeaders(firstName + surname)
 
             if checkDuplicateName:
@@ -817,6 +839,11 @@ class managerAddNewDLeaderWindow(managerAddNewDLeader.Ui_MainWindow, QtWidgets.Q
                     QtWidgets.QMessageBox.Ok:
                 managers.addNewDLeader(firstName, surname, mobileNumber, email)
                 messageBox('Success', 'DLeader successfully registered!', 'information', False)
+
+                self.line_firstName.clear()
+                self.line_surname.clear()
+                self.line_mobileNumber.clear()
+                self.line_email.clear()
 
                 managerDLeaderInfoBankWindow.show()
                 self.close()
@@ -885,7 +912,6 @@ class managerEditDLeaderProfileWindow(managerEditDLeaderProfile.Ui_MainWindow, Q
             managerDLeaderInfoBankWindow.setFocus()
         else:
             self.setFocus()
-
 
 
 class adminManagerProfilesWindow(adminManagerProfiles.Ui_MainWindow, QtWidgets.QMainWindow):
@@ -1042,6 +1068,7 @@ if __name__ == '__main__':
     managerAddNewDLeaderWindow = managerAddNewDLeaderWindow()
     managerDLeaderProfileWindow = managerDLeaderProfileWindow()
     managerEditDLeaderProfileWindow = managerEditDLeaderProfileWindow()
+    adminManagerProfilesWindow = adminManagerProfilesWindow()
     adminRegisterManagerWindow = adminRegisterManagerWindow()
 
     loginWindow.show()
