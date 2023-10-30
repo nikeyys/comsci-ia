@@ -124,10 +124,10 @@ class managers:
     @staticmethod
     def addNewMember(firstName, lastName, dob, mobileNumber, team, email, dleaderIndex):
         with ConnectionPool() as cursor:
-            cursor.execute('''INSERT INTO member("memberFirstName", "memberSurname", "memberDOB", "memberMobileNumber",
-            "teamID", "memberEmail", "dleaderID") VALUES(%s,%s,%s,%s,%s,%s,%s)''', (firstName, lastName, dob,
-                                                                                    mobileNumber, team,
-                                                                                    email, dleaderIndex))
+            cursor.execute('''
+            INSERT INTO member("memberFirstName", "memberSurname", "memberDOB", "memberMobileNumber", "teamID", 
+            "memberEmail", "dleaderID") 
+            VALUES(%s,%s,%s,%s,%s,%s,%s)''', (firstName, lastName, dob, mobileNumber, team, email, dleaderIndex))
 
     @staticmethod
     def fetchManagerDetails(user):
@@ -261,6 +261,15 @@ class administrators:
     def removeManager(manID):
         with ConnectionPool() as cursor:
             cursor.execute('''DELETE FROM manager WHERE "managerID" = %s''', (manID,))
+
+
+class miscellaneous:
+    @staticmethod
+    def actionLog(user, action, tableChanged, description, timestamp):
+        with ConnectionPool() as cursor:
+            cursor.execute('''
+            INSERT INTO "auditLog"("managerID", "actionID", "affectedTable", description, timestamp)
+            VALUES(%s,%s,%s,%s,%s)''', (user, action, tableChanged, description, timestamp))
 
 
 if __name__ == '__main__':

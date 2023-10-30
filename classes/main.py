@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import QApplication
 from classes.dialogBoxes import *
 from classes.object import *
 from classes.tableModel import *
+from classes.sendEmail import *
 from ui import login, applicantDashboard, managerDashboard, managerApplicantLog, managerTeamMembers, \
     managerMemberProfile, managerAddNewMember, managerEditMemberProfile, adminManagerProfiles, adminRegisterManager, \
     managerDLeaderInfoBank, managerAddNewDLeader, managerDLeaderProfile, managerEditDLeaderProfile
@@ -704,7 +705,7 @@ class managerDLeaderInfoBankWindow(managerDLeaderInfoBank.Ui_MainWindow, QtWidge
             if result:
                 dleaderName, dleaderID, dleaderMobileNumber, dleaderEmail = result
 
-            managerDLeaderProfileWindow.setDLeaderID(dleaderID)
+            managerDLeaderProfileWindow.setDLeaderDetails(dleaderID, dleaderEmail)
             managerDLeaderProfileWindow.dMembers()
             managerDLeaderProfileWindow.label_dLeaderName.setText(f'{dleaderName}')
             managerDLeaderProfileWindow.label_dLeaderID_filler.setText(f'{dleaderID}')
@@ -740,6 +741,7 @@ class managerDLeaderProfileWindow(managerDLeaderProfile.Ui_MainWindow, QtWidgets
         super().__init__()
         self.setupUi(self)
         self.dleaderID = None
+        self.dleaderEmail = self.label_email_filler.text()
 
         self.tbl_dMembers.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
 
@@ -747,13 +749,15 @@ class managerDLeaderProfileWindow(managerDLeaderProfile.Ui_MainWindow, QtWidgets
 
         # buttons
         self.btn_editProfile.clicked.connect(self.editProfile)
+        self.btn_sendEmail.clicked.connect(self.sendEmail)
         self.btn_close.clicked.connect(self.cancel)
 
         # line edits
         self.line_searchBar.textChanged.connect(self.dMembers)
 
-    def setDLeaderID(self, dleaderID):
+    def setDLeaderDetails(self, dleaderID, dleaderEmail):
         self.dleaderID = dleaderID
+        self.dleaderEmail = dleaderEmail
 
     def dMembers(self, keyword=None):
         keyword = self.line_searchBar.text()
@@ -784,6 +788,34 @@ class managerDLeaderProfileWindow(managerDLeaderProfile.Ui_MainWindow, QtWidgets
 
         managerEditDLeaderProfileWindow.show()
         managerDLeaderProfileWindow.setFocus()
+
+    def sendEmail(self):
+        selectedMemberIndex = self.tbl_dMembers.selectionModel().currentIndex()
+        subject = 'Request for approval'
+        recipient = self.dleaderEmail
+
+        if selectedMemberIndex.isValid():
+            member = self.dMembersTable.data(
+                self.dMembersTable.index(selectedMemberIndex.row(), 1), QtCore.Qt.DisplayRole)
+            team = self.dMembersTable.data(
+                self.dMembersTable.index(selectedMemberIndex.row(), 2), QtCore.Qt.DisplayRole)
+
+            message = f'''
+            To whom it may concern,
+            
+            This email has been send to request approval for {member} to join the {team} team in the Live Production ministry within CCF.
+            
+            Please send a reply to this email to acknowledge receipt and confirm approval.
+            
+            Sincerely yours,
+            CCF Live Production Ministry'''
+
+            if sendEmailMsg(recipient, subject, message):
+                messageBox('Success', 'Email sent successfully!', 'information', False)
+            else:
+                messageBox('Error', 'Failed to send email.', 'critical', False)
+        else:
+            messageBox('Error', 'Please select a member.', 'critical', False)
 
     def cancel(self):
         managerDLeaderInfoBankWindow.show()
