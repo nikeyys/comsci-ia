@@ -4,8 +4,8 @@ from email.mime.text import MIMEText
 def sendEmailMsg(recipient, subject, message):
     smtpServer = 'smtp.gmail.com'
     smtpPort = 587
-    smtpUser = 'nicplayzrblxyt@gmail.com'
-    smtpPassword = 'yryzyvpuwmzjyjga'
+    smtpUser = 'liese.tanchan.2024@singaporeschoolcebu.com'
+    smtpPassword = 'uebregvnlxsertxa'
 
     emailMsg = MIMEText(message)
 
