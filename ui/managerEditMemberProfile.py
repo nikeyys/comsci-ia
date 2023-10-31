@@ -86,6 +86,7 @@ class Ui_MainWindow(object):
         self.label_dLeader_header.setObjectName("label_dLeader_header")
         self.vLayout_dLeader.addWidget(self.label_dLeader_header)
         self.combo_dLeader = QtWidgets.QComboBox(self.layoutWidget)
+        self.combo_dLeader.setEditable(True)
         self.combo_dLeader.setObjectName("combo_dLeader")
         self.vLayout_dLeader.addWidget(self.combo_dLeader)
         self.hLayout_memberDetails.addLayout(self.vLayout_dLeader)

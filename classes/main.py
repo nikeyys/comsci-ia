@@ -118,6 +118,17 @@ class loginWindow(login.Ui_MainWindow, QtWidgets.QMainWindow):
             currentTime = QDateTime.currentDateTime().time()
             managerName = managers.fetchManagerDetails(usernameEntered)
 
+            permissionLevel = managers.getPermissionLevel(usernameEntered)
+
+            if permissionLevel == 1:
+                managerDashboardWindow.label_adminDashboard.setVisible(False)
+                managerDashboardWindow.btn_adminAudits.setVisible(False)
+                managerDashboardWindow.btn_adminManagerProfile.setVisible(False)
+            elif permissionLevel == 2:
+                managerDashboardWindow.label_adminDashboard.setVisible(True)
+                managerDashboardWindow.btn_adminAudits.setVisible(True)
+                managerDashboardWindow.btn_adminManagerProfile.setVisible(True)
+
             if currentTime < QDateTime.currentDateTime().time().fromString("12:00", "hh:mm"):
                 morning = [f"⛅ Sun's up! Good morning, {managerName}!",
                            f"🏆 New day. New wins! You got this, {managerName}!",
@@ -339,6 +350,11 @@ class managerApplicantLogWindow(managerApplicantLog.Ui_MainWindow, QtWidgets.QMa
                 managers.removeApplicant(applicationID)
                 messageBox('Success', f'{applicantName} has been removed.', 'information')
 
+                managerApplicantLogWindow.applicantLog()
+                managerDashboardWindow.pendingApplications()
+            else:
+                self.setFocus()
+
     def backToDashboard(self):
         self.close()
         managerDashboardWindow.setFocus()
@@ -359,6 +375,7 @@ class managerTeamMembersWindow(managerTeamMembers.Ui_MainWindow, QtWidgets.QMain
         self.btn_backToDashboard.clicked.connect(self.backToDashboard)
         self.combo_teamSelect.currentIndexChanged.connect(self.applyFilters)
         self.btn_addNewMember.clicked.connect(self.managerAddNewMember)
+        self.btn_deleteMember.clicked.connect(self.managerDeleteMember)
 
         # line edits
         self.line_searchBar.textChanged.connect(self.teamMembers)
@@ -387,6 +404,26 @@ class managerTeamMembersWindow(managerTeamMembers.Ui_MainWindow, QtWidgets.QMain
     def managerAddNewMember(self):
         managerAddNewMemberWindow.show()
         managerAddNewMemberWindow.setFocus()
+
+    def managerDeleteMember(self):
+        selectedMemberIndex = self.tbl_teamMembers.selectionModel().currentIndex()
+
+        if selectedMemberIndex.isValid():
+            memberID = self.teamMembersTable.data(
+                self.teamMembersTable.index(selectedMemberIndex.row(), 0), QtCore.Qt.DisplayRole)
+            memberName = self.teamMembersTable.data(
+                self.teamMembersTable.index(selectedMemberIndex.row(), 1), QtCore.Qt.DisplayRole)
+            print(memberID)
+            if messageBox('Confirmation', f'Are you sure you want to delete [{memberName}]? \n'
+                                          f'This action cannot be undone.', 'question',
+                          True) == QtWidgets.QMessageBox.Ok:
+                managers.removeMember(memberID)
+                messageBox('Success', f'{memberName} has been removed.', 'information')
+
+                self.teamMembers()
+                managerDashboardWindow.showMemberStats()
+            else:
+                self.setFocus()
 
     def viewMemberProfile(self):
         selectedMemberIndex = self.tbl_teamMembers.selectionModel().currentIndex()
@@ -536,6 +573,9 @@ class managerEditMemberProfileWindow(managerEditMemberProfile.Ui_MainWindow, QtW
                       True) == QtWidgets.QMessageBox.Ok:
             managers.editMemberProfile(teamIndex, dleaderIndex, dob, mobileNumber, email, member)
             messageBox('Success!', 'Changes saved successfully!', 'information', False)
+
+            managerTeamMembersWindow.teamMembers()
+
             self.line_mobileNumber.clear()
             self.line_email.clear()
             self.close()
@@ -637,6 +677,8 @@ class managerAddNewMemberWindow(managerAddNewMember.Ui_MainWindow, QtWidgets.QMa
                 messageBox('Success', 'Member successfully registered!', 'information', False)
 
                 managerTeamMembersWindow.show()
+                managerTeamMembersWindow.teamMembers()
+                managerDashboardWindow.showMemberStats()
                 self.close()
                 managerTeamMembersWindow.setFocus()
             else:
@@ -729,6 +771,10 @@ class managerDLeaderInfoBankWindow(managerDLeaderInfoBank.Ui_MainWindow, QtWidge
                           True) == QtWidgets.QMessageBox.Ok:
                 managers.removeDLeader(dleaderID)
                 messageBox('Success', f'{dleaderName} has been removed.', 'information')
+
+                managerDLeaderInfoBankWindow.dLeaderInfoBank()
+            else:
+                self.setFocus()
 
     def backToDashboard(self):
         managerDashboardWindow.show()
@@ -877,6 +923,8 @@ class managerAddNewDLeaderWindow(managerAddNewDLeader.Ui_MainWindow, QtWidgets.Q
                 self.line_mobileNumber.clear()
                 self.line_email.clear()
 
+                managerDLeaderInfoBankWindow.dLeaderInfoBank()
+
                 managerDLeaderInfoBankWindow.show()
                 self.close()
                 managerDLeaderInfoBankWindow.setFocus()
@@ -928,7 +976,8 @@ class managerEditDLeaderProfileWindow(managerEditDLeaderProfile.Ui_MainWindow, Q
         if email == '':
             email = None
 
-        if messageBox('Confirmation', 'Are you sure you want to save changes?', 'question', True) == QtWidgets.QMessageBox.Ok:
+        if messageBox('Confirmation', 'Are you sure you want to save changes?', 'question',
+                      True) == QtWidgets.QMessageBox.Ok:
             managers.editDLeaderProfile(mobileNumber, email, dleader)
             messageBox('Success!', 'Changes saved successfully!', 'information', False)
             self.line_mobileNumber.clear()
@@ -969,11 +1018,11 @@ class adminManagerProfilesWindow(adminManagerProfiles.Ui_MainWindow, QtWidgets.Q
 
     def managerProfiles(self, keyword=None):
         keyword = self.line_searchBar.text()
-        header = ['Manager ID', 'Manager Name', 'Manager Username']
+        header = ['Manager ID', 'Manager Name', 'Manager Username', 'Permission Level']
         data = administrators.getManagerProfiles(keyword)
 
         if not data:
-            data = ['', '', '']
+            data = ['', '', '', '']
 
         self.managerProfilesTable = tableModel(self, data, header)
         self.tbl_managerProfiles.setModel(self.managerProfilesTable)
@@ -989,12 +1038,15 @@ class adminManagerProfilesWindow(adminManagerProfiles.Ui_MainWindow, QtWidgets.Q
                 self.managerProfilesTable.index(selectedManagerIndex.row(), 0), QtCore.Qt.DisplayRole)
             managerName = self.managerProfilesTable.data(
                 self.managerProfilesTable.index(selectedManagerIndex.row(), 1), QtCore.Qt.DisplayRole)
-            if administrators.getManagerProfiles(managerID):
-                if messageBox('Confirmation', f'Are you sure you want to delete [{managerName}]? \n'
-                                              f'This action cannot be undone.', 'question',
-                              True) == QtWidgets.QMessageBox.Ok:
-                    administrators.removeManager(managerID)
-                    messageBox('Success', f'{managerName} has been removed.', 'information')
+            if messageBox('Confirmation', f'Are you sure you want to delete [{managerName}]? \n'
+                                          f'This action cannot be undone.', 'question',
+                          True) == QtWidgets.QMessageBox.Ok:
+                administrators.removeManager(managerID)
+                messageBox('Success', f'{managerName} has been removed.', 'information')
+
+                adminManagerProfilesWindow.managerProfiles()
+            else:
+                self.setFocus()
 
     def adminRegisterManager(self):
         adminRegisterManagerWindow.show()
@@ -1047,8 +1099,17 @@ class adminRegisterManagerWindow(adminRegisterManager.Ui_MainWindow, QtWidgets.Q
         surname = self.line_surname.text()
         username = self.line_username.text()
         password = self.line_password.text()
+        permission = self.combo_permission.currentText()
 
-        if firstName and surname and username and password:
+        if permission != 'Select Option':
+            if permission == 'Manager':
+                permissionLevel = '1'
+            if permission == 'Administrator':
+                permissionLevel = '2'
+        else:
+            permissionLevel = ''
+
+        if firstName and surname and username and password and permissionLevel:
             checkDuplicateName = administrators.getManagerProfiles(firstName + surname)
             checkDuplicateUsername = administrators.getManagerProfiles(username)
 
@@ -1057,13 +1118,15 @@ class adminRegisterManagerWindow(adminRegisterManager.Ui_MainWindow, QtWidgets.Q
                 self.setFocus()
             elif messageBox('Confirmation', 'Are you sure you want to register this manager?', 'question', True) == \
                     QtWidgets.QMessageBox.Ok:
-                administrators.add(firstName, surname, username, password)
+                administrators.add(firstName, surname, username, password, permissionLevel)
                 messageBox('Success', 'Manager successfully registered!', 'information', False)
 
                 self.line_firstName.clear()
                 self.line_surname.clear()
                 self.line_username.clear()
                 self.line_password.clear()
+
+                adminManagerProfilesWindow.managerProfiles()
 
                 adminManagerProfilesWindow.show()
                 self.close()

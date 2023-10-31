@@ -93,6 +93,32 @@
          </property>
         </widget>
        </item>
+       <item row="4" column="0">
+        <widget class="QLabel" name="label_2">
+         <property name="text">
+          <string>Permission Level</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="1">
+        <widget class="QComboBox" name="combo_permission">
+         <item>
+          <property name="text">
+           <string>Select Option</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Manager</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Administrator</string>
+          </property>
+         </item>
+        </widget>
+       </item>
       </layout>
      </item>
      <item>

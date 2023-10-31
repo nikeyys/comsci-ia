@@ -93,7 +93,7 @@ class Ui_MainWindow(object):
         self.btn_adminManagerProfile.setObjectName("btn_adminManagerProfile")
         self.vLayout_adminDashboard.addWidget(self.btn_adminManagerProfile)
         self.verticalLayout_4.addLayout(self.vLayout_adminDashboard)
-        spacerItem = QtWidgets.QSpacerItem(20, 385, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Maximum)
+        spacerItem = QtWidgets.QSpacerItem(20, 385, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.verticalLayout_4.addItem(spacerItem)
         self.vLayout_logout = QtWidgets.QVBoxLayout()
         self.vLayout_logout.setObjectName("vLayout_logout")

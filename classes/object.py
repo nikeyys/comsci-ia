@@ -69,6 +69,17 @@ class applicants:
 
 class managers:
     @staticmethod
+    def getPermissionLevel(manager):
+        with ConnectionPool() as cursor:
+            cursor.execute('''SELECT "permissionLevel" FROM manager WHERE "managerUsername" = %s''', (manager,))
+            result = cursor.fetchone()
+        if result is not None:
+            permission = result[0]
+            return permission
+        else:
+            return None
+
+    @staticmethod
     def getPendingApplications(keyword=None):
         with ConnectionPool() as cursor:
             cursor.execute('''
@@ -141,6 +152,11 @@ class managers:
             return managerName
         else:
             return None
+
+    @staticmethod
+    def removeMember(memberID):
+        with ConnectionPool() as cursor:
+            cursor.execute('''DELETE FROM member WHERE "memberID" = %s''', (memberID,))
 
     @staticmethod
     def removeApplicant(applicantID):
@@ -240,16 +256,17 @@ class managers:
 
 class administrators:
     @staticmethod
-    def add(firstName, lastName, username, password):
+    def add(firstName, lastName, username, password, permissionLevel):
         with ConnectionPool() as cursor:
             cursor.execute('''INSERT INTO manager("managerFirstName", "managerSurname", "managerUsername", 
-            "managerPassword") VALUES(%s,%s,%s,%s)''', (firstName, lastName, username, password))
+            "managerPassword", "permissionLevel") VALUES(%s,%s,%s,%s,%s)''',
+                           (firstName, lastName, username, password, permissionLevel))
 
     @staticmethod
     def getManagerProfiles(keyword):
         with ConnectionPool() as cursor:
             cursor.execute('''
-                SELECT "managerID", CONCAT("managerFirstName", ' ', "managerSurname") AS "managerName", "managerUsername"
+                SELECT "managerID", CONCAT("managerFirstName", ' ', "managerSurname") AS "managerName", "managerUsername", "permissionLevel"
                 FROM manager
                 WHERE manager."managerFirstName" ILIKE %s OR manager."managerSurname" ILIKE %s OR 
                 manager."managerUsername" ILIKE %s
