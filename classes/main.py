@@ -10,9 +10,10 @@ from classes.dialogBoxes import *
 from classes.object import *
 from classes.tableModel import *
 from classes.sendEmail import *
-from ui import login, applicantDashboard, managerDashboard, managerApplicantLog, managerTeamMembers, \
-    managerMemberProfile, managerAddNewMember, managerEditMemberProfile, adminManagerProfiles, adminRegisterManager, \
-    managerDLeaderInfoBank, managerAddNewDLeader, managerDLeaderProfile, managerEditDLeaderProfile
+from ui import (login, applicantDashboard, applicantNewApplication, applicantAnotherApplication, managerDashboard,
+                managerApplicantLog, managerTeamMembers, managerMemberProfile, managerAddNewMember,
+                managerEditMemberProfile, adminManagerProfiles, adminRegisterManager, managerDLeaderInfoBank,
+                managerAddNewDLeader, managerDLeaderProfile, managerEditDLeaderProfile)
 
 
 def verifyUsername(username):
@@ -32,6 +33,7 @@ class loginWindow(login.Ui_MainWindow, QtWidgets.QMainWindow):
         self.btn_applicantLogin.clicked.connect(self.loginApplicant)
         self.btn_applicantCancel.clicked.connect(self.cancel)
         self.check_applicantShowPass.clicked.connect(self.showPass)
+        self.cmdLink_applicantCTA.clicked.connect(self.newApplication)
 
         # manager
         self.btn_managerLogin.clicked.connect(self.loginManager)
@@ -170,6 +172,10 @@ class loginWindow(login.Ui_MainWindow, QtWidgets.QMainWindow):
         elif not self.check_managerShowPass.isChecked():
             self.line_managerPassword.setEchoMode(QtWidgets.QLineEdit.Password)
 
+    def newApplication(self):
+        applicantNewApplicationWindow.show()
+        applicantNewApplicationWindow.setFocus()
+
     def cancel(self):
         if messageBox('Confirmation', 'Are you sure you want to exit?', 'question', True) == QtWidgets.QMessageBox.Ok:
             self.close()
@@ -191,7 +197,7 @@ class applicantDashboardWindow(applicantDashboard.Ui_MainWindow, QtWidgets.QMain
 
         # buttons
         self.btn_logout.clicked.connect(self.logout)
-        # self.btn_newApplication.clicked.connect(self.newApplication)
+        self.btn_newApplication.clicked.connect(self.newApplication)
 
     def previousApplications(self):
         header = ['Application ID', 'Date', 'Team', 'Status']
@@ -204,8 +210,150 @@ class applicantDashboardWindow(applicantDashboard.Ui_MainWindow, QtWidgets.QMain
         self.tbl_prevApplications.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
         self.tbl_prevApplications.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.Stretch)
 
+    def newApplication(self):
+        applicantAnotherApplicationWindow.show()
+        applicantAnotherApplicationWindow.setFocus()
+
     def logout(self):
         if messageBox('Confirmation', 'Are you sure you want to exit?', 'question', True) == QtWidgets.QMessageBox.Ok:
+            self.close()
+            loginWindow.show()
+        else:
+            self.setFocus()
+
+
+class applicantNewApplicationWindow(applicantNewApplication.Ui_MainWindow, QtWidgets.QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+
+        # slots and signals
+
+        # buttons
+        # self.btn_submit.clicked.connect(self.submitApplication)
+        self.btn_cancel.clicked.connect(self.cancel)
+        self.combo_teamSelect.currentIndexChanged.connect(self.teamSelect)
+        self.combo_dleader.currentIndexChanged.connect(self.printDLeader)
+
+        # line edits
+        self.line_firstName.textChanged.connect(self.printFirstName)
+        self.line_surname.textChanged.connect(self.printSurname)
+        self.line_mobileNumber.textChanged.connect(self.printMobileNumber)
+        self.line_email.textChanged.connect(self.printEmail)
+        self.line_occupation.textChanged.connect(self.printOccupation)
+        self.line_employer.textChanged.connect(self.printEmployer)
+
+        # text edits
+        self.text_whenJesusLord.textChanged.connect(self.printWhenJesusLord)
+        self.text_howJesusLord.textChanged.connect(self.printHowJesusLord)
+        self.text_loseSalvation.textChanged.connect(self.printLoseSalvation)
+        self.text_ministryToSalvation.textChanged.connect(self.printMinistryToSalvation)
+
+        # date entry
+        self.date_dob.setCalendarPopup(True)
+        self.date_dob.dateChanged.connect(self.printDob)
+
+        # validators
+        self.line_mobileNumber.setValidator(QtGui.QIntValidator())
+
+    # def submitApplication(self):
+
+    def teamSelect(self):
+        team = self.combo_teamSelect.currentText()
+        self.combo_teamSelect.setCurrentText(team)
+
+    def printDLeader(self):
+        dLeader = self.combo_dleader.currentText()
+        self.combo_dleader.setCurrentText(dLeader)
+
+    def printFirstName(self):
+        self.line_firstName.setText(self.line_firstName.text())
+
+    def printSurname(self):
+        self.line_surname.setText(self.line_surname.text())
+
+    def printMobileNumber(self):
+        self.line_mobileNumber.setText(self.line_mobileNumber.text())
+
+    def printEmail(self):
+        self.line_email.setText(self.line_email.text())
+
+    def printOccupation(self):
+        self.line_occupation.setText(self.line_occupation.text())
+
+    def printEmployer(self):
+        self.line_employer.setText(self.line_employer.text())
+
+    def printWhenJesusLord(self):
+        self.text_whenJesusLord.setText(self.text_whenJesusLord.text())
+
+    def printHowJesusLord(self):
+        self.text_howJesusLord.setText(self.text_howJesusLord.text())
+
+    def printLoseSalvation(self):
+        self.text_loseSalvation.setText(self.text_loseSalvation.text())
+
+    def printMinistryToSalvation(self):
+        self.text_ministryToSalvation.setText(self.text_ministryToSalvation.text())
+
+    def printDob(self):
+        self.date_dob.setDate(self.date_dob.date())
+
+    def cancel(self):
+        if messageBox('Confirmation', 'Are you sure you wish to cancel your application? \n'
+                                      'Data will not be saved.',
+                      'question', True) == QtWidgets.QMessageBox.Ok:
+            self.close()
+            loginWindow.show()
+        else:
+            self.setFocus()
+
+
+class applicantAnotherApplicationWindow(applicantAnotherApplication.Ui_MainWindow, QtWidgets.QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+
+        # slots and signals
+
+        # buttons
+        # self.btn_submit.clicked.connect(self.submitApplication)
+        self.btn_cancel.clicked.connect(self.cancel)
+        self.combo_teamSelect.currentIndexChanged.connect(self.teamSelect)
+        self.combo_dleader.currentIndexChanged.connect(self.printDLeader)
+
+        # text edits
+        self.text_whenJesusLord.textChanged.connect(self.printWhenJesusLord)
+        self.text_howJesusLord.textChanged.connect(self.printHowJesusLord)
+        self.text_loseSalvation.textChanged.connect(self.printLoseSalvation)
+        self.text_ministryToSalvation.textChanged.connect(self.printMinistryToSalvation)
+
+    # def submitApplication(self):
+
+    def teamSelect(self):
+        team = self.combo_teamSelect.currentText()
+        self.combo_teamSelect.setCurrentText(team)
+
+    def printDLeader(self):
+        dLeader = self.combo_dleader.currentText()
+        self.combo_dleader.setCurrentText(dLeader)
+
+    def printWhenJesusLord(self):
+        self.text_whenJesusLord.setText(self.text_whenJesusLord.text())
+
+    def printHowJesusLord(self):
+        self.text_howJesusLord.setText(self.text_howJesusLord.text())
+
+    def printLoseSalvation(self):
+        self.text_loseSalvation.setText(self.text_loseSalvation.text())
+
+    def printMinistryToSalvation(self):
+        self.text_ministryToSalvation.setText(self.text_ministryToSalvation.text())
+
+    def cancel(self):
+        if messageBox('Confirmation', 'Are you sure you wish to cancel your application? \n'
+                                      'Data will not be saved.',
+                      'question', True) == QtWidgets.QMessageBox.Ok:
             self.close()
             loginWindow.show()
         else:
@@ -1153,6 +1301,8 @@ if __name__ == '__main__':
 
     loginWindow = loginWindow()
     applicantDashboardWindow = applicantDashboardWindow()
+    applicantNewApplicationWindow = applicantNewApplicationWindow()
+    applicantAnotherApplicationWindow = applicantAnotherApplicationWindow()
     managerDashboardWindow = managerDashboardWindow()
     managerApplicantLogWindow = managerApplicantLogWindow()
     managerTeamMembersWindow = managerTeamMembersWindow()
