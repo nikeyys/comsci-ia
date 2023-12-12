@@ -467,7 +467,11 @@
             </widget>
            </item>
            <item>
-            <widget class="QTextEdit" name="text_whenJesusLord"/>
+            <widget class="QTextEdit" name="text_whenJesusLord">
+             <property name="acceptRichText">
+              <bool>false</bool>
+             </property>
+            </widget>
            </item>
           </layout>
          </item>
@@ -481,7 +485,11 @@
             </widget>
            </item>
            <item>
-            <widget class="QTextEdit" name="text_howJesusLord"/>
+            <widget class="QTextEdit" name="text_howJesusLord">
+             <property name="acceptRichText">
+              <bool>false</bool>
+             </property>
+            </widget>
            </item>
           </layout>
          </item>
@@ -495,7 +503,11 @@
             </widget>
            </item>
            <item>
-            <widget class="QTextEdit" name="text_loseSalvation"/>
+            <widget class="QTextEdit" name="text_loseSalvation">
+             <property name="acceptRichText">
+              <bool>false</bool>
+             </property>
+            </widget>
            </item>
           </layout>
          </item>
@@ -509,7 +521,11 @@
             </widget>
            </item>
            <item>
-            <widget class="QTextEdit" name="text_ministryToSalvation"/>
+            <widget class="QTextEdit" name="text_ministryToSalvation">
+             <property name="acceptRichText">
+              <bool>false</bool>
+             </property>
+            </widget>
            </item>
           </layout>
          </item>

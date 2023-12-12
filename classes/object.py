@@ -66,6 +66,47 @@ class applicants:
             else:
                 return None
 
+    @staticmethod
+    def getApplicants(keyword=None):
+        with ConnectionPool() as cursor:
+            cursor.execute('''
+            SELECT applicant."applicantID", CONCAT(applicant."applicantFirstName", ' ', applicant."applicantSurname") 
+            AS "applicantName", "applicantMobileNumber", team."teamName"
+            FROM applicant
+            INNER JOIN application ON applicant."applicantID" = application."applicantID"
+            INNER JOIN team ON application."teamID" = team."teamID"
+            WHERE applicant."applicantFirstName" ILIKE %s OR applicant."applicantSurname" ILIKE %s OR 
+            applicant."applicantEmail" ILIKE %s OR applicant."applicantMobileNumber" ILIKE %s
+            ORDER BY "applicationID"''', (f'%{keyword}%', f'%{keyword}%', f'%{keyword}%', f'%{keyword}%'))
+            return cursor.fetchall()
+
+    @staticmethod
+    def addNewApplicantProfile(firstName, surname, mobileNumber, email, dob, dleaderID, occupation, employer):
+        with ConnectionPool() as cursor:
+            cursor.execute('''INSERT INTO applicant("applicantFirstName", "applicantSurname", "applicantMobileNumber", 
+                            "applicantEmail", "applicantDOB", "dleaderID", "applicantOccupation", 
+                            "applicantEmployer") 
+                            VALUES(%s,%s,%s,%s,%s,%s,%s,%s);
+                            SELECT LASTVAL()''', (firstName, surname, mobileNumber, email, dob,
+                                                              dleaderID, occupation, employer))
+            return cursor.fetchone()[0]
+
+    @staticmethod
+    def addNewApplication(whenJesusLord, howJesusLord, loseSalvation, ministryToSalvation, applicationDate, applicantID,
+                          teamID):
+        with ConnectionPool() as cursor:
+            cursor.execute('''INSERT INTO application("whenJesusLord", "howJesusLord", "loseSalvation", 
+                            "ministryToSalvation", "applicationDate", "applicantID", "teamID", "applicationStatus") 
+                            VALUES(%s,%s,%s,%s,%s,%s,%s, 'PENDING')''',
+                           (whenJesusLord, howJesusLord, loseSalvation, ministryToSalvation, applicationDate,
+                            applicantID, teamID))
+
+    @staticmethod
+    def addNewApplicantAccount(username, password, applicantID):
+        with ConnectionPool() as cursor:
+            cursor.execute('''INSERT INTO "applicantCredentials"("applicantUsername", "applicantPassword", 
+            "applicantID") VALUES(%s,%s,%s)''', (username, password, applicantID))
+
 
 class managers:
     @staticmethod
@@ -88,7 +129,7 @@ class managers:
             FROM application
             INNER JOIN applicant ON application."applicantID" = applicant."applicantID"
             INNER JOIN team ON application."teamID" = team."teamID"
-            WHERE application."applicationStatus" = 'Pending'  /* AND (applicant."applicantFirstName" ILIKE %s 
+            WHERE application."applicationStatus" = 'PENDING'  /* AND (applicant."applicantFirstName" ILIKE %s 
             OR applicant."applicantSurname" ILIKE %s) */
             ORDER BY "applicationID"''', (f'%{keyword}%', f'%{keyword}%'))
             return cursor.fetchall()
@@ -101,7 +142,7 @@ class managers:
             AS "applicantName", "applicantMobileNumber", team."teamName"
             FROM applicant
             INNER JOIN application ON applicant."applicantID" = application."applicantID"
-            INNER JOIN team ON applicant."teamID" = team."teamID"
+            INNER JOIN team ON application."teamID" = team."teamID"
             WHERE applicant."applicantFirstName" ILIKE %s OR applicant."applicantSurname" ILIKE %s
             ORDER BY "applicationID"''', (f'%{keyword}%', f'%{keyword}%'))
             return cursor.fetchall()
@@ -138,7 +179,7 @@ class managers:
             cursor.execute('''
             INSERT INTO member("memberFirstName", "memberSurname", "memberDOB", "memberMobileNumber", "teamID", 
             "memberEmail", "dleaderID") 
-            VALUES(%s,%s,%s,%s,%s,%s,%s)''', (firstName, lastName, dob, mobileNumber, team, email, dleaderIndex))
+            VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)''', (firstName, lastName, dob, mobileNumber, team, email, dleaderIndex))
 
     @staticmethod
     def fetchManagerDetails(user):

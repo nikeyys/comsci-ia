@@ -8,10 +8,10 @@ from PyQt5.QtWidgets import QApplication
 
 from classes.dialogBoxes import *
 from classes.object import *
-from classes.tableModel import *
 from classes.sendEmail import *
-from ui import (login, applicantDashboard, applicantNewApplication, applicantAnotherApplication, managerDashboard,
-                managerApplicantLog, managerTeamMembers, managerMemberProfile, managerAddNewMember,
+from classes.tableModel import *
+from ui import (login, applicantDashboard, applicantNewApplication, applicantAnotherApplication, applicantNewAccount,
+                managerDashboard, managerApplicantLog, managerTeamMembers, managerMemberProfile, managerAddNewMember,
                 managerEditMemberProfile, adminManagerProfiles, adminRegisterManager, managerDLeaderInfoBank,
                 managerAddNewDLeader, managerDLeaderProfile, managerEditDLeaderProfile)
 
@@ -211,6 +211,12 @@ class applicantDashboardWindow(applicantDashboard.Ui_MainWindow, QtWidgets.QMain
         self.tbl_prevApplications.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.Stretch)
 
     def newApplication(self):
+        applicantIDText = self.label_applicantID.text()
+        colonIndex = applicantIDText.find(':')
+        applicantIDPart = applicantIDText[colonIndex + 1:].strip()
+        applicantID = int(applicantIDPart)
+
+        applicantAnotherApplicationWindow.getApplicantID(applicantID)
         applicantAnotherApplicationWindow.show()
         applicantAnotherApplicationWindow.setFocus()
 
@@ -227,10 +233,15 @@ class applicantNewApplicationWindow(applicantNewApplication.Ui_MainWindow, QtWid
         super().__init__()
         self.setupUi(self)
 
+        self.responseWhenJesusLord = None
+        self.responseHowJesusLord = None
+        self.responseLoseSalvation = None
+        self.responseMinistryToSalvation = None
+
         # slots and signals
 
         # buttons
-        # self.btn_submit.clicked.connect(self.submitApplication)
+        self.btn_submit.clicked.connect(self.submitApplication)
         self.btn_cancel.clicked.connect(self.cancel)
         self.combo_teamSelect.currentIndexChanged.connect(self.teamSelect)
         self.combo_dleader.currentIndexChanged.connect(self.printDLeader)
@@ -255,8 +266,6 @@ class applicantNewApplicationWindow(applicantNewApplication.Ui_MainWindow, QtWid
 
         # validators
         self.line_mobileNumber.setValidator(QtGui.QIntValidator())
-
-    # def submitApplication(self):
 
     def teamSelect(self):
         team = self.combo_teamSelect.currentText()
@@ -285,19 +294,70 @@ class applicantNewApplicationWindow(applicantNewApplication.Ui_MainWindow, QtWid
         self.line_employer.setText(self.line_employer.text())
 
     def printWhenJesusLord(self):
-        self.text_whenJesusLord.setText(self.text_whenJesusLord.text())
+        self.responseWhenJesusLord = self.text_whenJesusLord.toPlainText()
 
     def printHowJesusLord(self):
-        self.text_howJesusLord.setText(self.text_howJesusLord.text())
+        self.responseHowJesusLord = self.text_howJesusLord.toPlainText()
 
     def printLoseSalvation(self):
-        self.text_loseSalvation.setText(self.text_loseSalvation.text())
+        self.responseLoseSalvation = self.text_loseSalvation.toPlainText()
 
     def printMinistryToSalvation(self):
-        self.text_ministryToSalvation.setText(self.text_ministryToSalvation.text())
+        self.responseMinistryToSalvation = self.text_ministryToSalvation.toPlainText()
 
     def printDob(self):
         self.date_dob.setDate(self.date_dob.date())
+
+    def submitApplication(self):
+        firstName = self.line_firstName.text()
+        surname = self.line_surname.text()
+        dob = self.date_dob.text()
+        mobileNumber = self.line_mobileNumber.text()
+        email = self.line_email.text()
+        team = self.combo_teamSelect.currentText()
+        dleader = self.combo_dleader.currentText()
+        occupation = self.line_occupation.text()
+        employer = self.line_employer.text()
+
+        responseWhenJesusLord = self.responseWhenJesusLord
+        responseHowJesusLord = self.responseHowJesusLord
+        responseLoseSalvation = self.responseLoseSalvation
+        responseMinistryToSalvation = self.responseMinistryToSalvation
+
+        applicationDate = QDateTime.currentDateTime().date().toString("yyyy-MM-dd")
+
+        if team == 'Camera & Graphics':
+            teamIndex = 1
+        elif team == 'Sounds & Lights':
+            teamIndex = 2
+        elif team == 'Stage Management':
+            teamIndex = 3
+
+        if email == '':
+            email = None
+
+        if dleader == '':
+            dleader = None
+
+        duplicateCheck = applicants.getApplicants(firstName + surname)
+        if duplicateCheck is True:
+            messageBox('Error', 'Applicant already exists!', 'critical', False)
+        else:
+            if (firstName and surname and mobileNumber and dob and responseWhenJesusLord and responseHowJesusLord and
+                    responseLoseSalvation and responseMinistryToSalvation) != '':
+                applicantID = applicants.addNewApplicantProfile(firstName, surname, mobileNumber, email, dob, dleader,
+                                                                occupation, employer)
+                applicants.addNewApplication(responseWhenJesusLord, responseHowJesusLord, responseLoseSalvation,
+                                             responseMinistryToSalvation, applicationDate, applicantID, teamIndex)
+                messageBox('Success', 'Application submitted successfully!', 'information', False)
+
+                applicantNewAccountWindow.getApplicantID(applicantID)
+                self.close()
+                applicantNewAccountWindow.show()
+                applicantDashboardWindow.setFocus()
+            else:
+                messageBox('Error', 'Please fill in all the fields!', 'critical', False)
+                self.setFocus()
 
     def cancel(self):
         if messageBox('Confirmation', 'Are you sure you wish to cancel your application? \n'
@@ -314,10 +374,17 @@ class applicantAnotherApplicationWindow(applicantAnotherApplication.Ui_MainWindo
         super().__init__()
         self.setupUi(self)
 
+        self.applicantID = None
+
+        self.responseWhenJesusLord = None
+        self.responseHowJesusLord = None
+        self.responseLoseSalvation = None
+        self.responseMinistryToSalvation = None
+
         # slots and signals
 
         # buttons
-        # self.btn_submit.clicked.connect(self.submitApplication)
+        self.btn_submit.clicked.connect(self.submitApplication)
         self.btn_cancel.clicked.connect(self.cancel)
         self.combo_teamSelect.currentIndexChanged.connect(self.teamSelect)
         self.combo_dleader.currentIndexChanged.connect(self.printDLeader)
@@ -328,7 +395,8 @@ class applicantAnotherApplicationWindow(applicantAnotherApplication.Ui_MainWindo
         self.text_loseSalvation.textChanged.connect(self.printLoseSalvation)
         self.text_ministryToSalvation.textChanged.connect(self.printMinistryToSalvation)
 
-    # def submitApplication(self):
+    def getApplicantID(self, applicantID):
+        self.applicantID = applicantID
 
     def teamSelect(self):
         team = self.combo_teamSelect.currentText()
@@ -339,16 +407,92 @@ class applicantAnotherApplicationWindow(applicantAnotherApplication.Ui_MainWindo
         self.combo_dleader.setCurrentText(dLeader)
 
     def printWhenJesusLord(self):
-        self.text_whenJesusLord.setText(self.text_whenJesusLord.text())
+        self.responseWhenJesusLord = self.text_whenJesusLord.toPlainText()
 
     def printHowJesusLord(self):
-        self.text_howJesusLord.setText(self.text_howJesusLord.text())
+        self.responseHowJesusLord = self.text_howJesusLord.toPlainText()
 
     def printLoseSalvation(self):
-        self.text_loseSalvation.setText(self.text_loseSalvation.text())
+        self.responseLoseSalvation = self.text_loseSalvation.toPlainText()
 
     def printMinistryToSalvation(self):
-        self.text_ministryToSalvation.setText(self.text_ministryToSalvation.text())
+        self.responseMinistryToSalvation = self.text_ministryToSalvation.toPlainText()
+
+    def submitApplication(self):
+        applicantID = self.applicantID
+        team = self.combo_teamSelect.currentText()
+
+        if team == 'Camera & Graphics':
+            teamIndex = 1
+        elif team == 'Sounds & Lights':
+            teamIndex = 2
+        elif team == 'Stage Management':
+            teamIndex = 3
+
+        responseWhenJesusLord = self.responseWhenJesusLord
+        responseHowJesusLord = self.responseHowJesusLord
+        responseLoseSalvation = self.responseLoseSalvation
+        responseMinistryToSalvation = self.responseMinistryToSalvation
+
+        applicationDate = QDateTime.currentDateTime().date().toString("yyyy-MM-dd")
+        if (responseWhenJesusLord and responseHowJesusLord and responseLoseSalvation and
+                responseMinistryToSalvation) != '':
+            applicants.addNewApplication(responseWhenJesusLord, responseHowJesusLord, responseLoseSalvation,
+                                         responseMinistryToSalvation, applicationDate, applicantID, teamIndex)
+            messageBox('Success', 'Application submitted successfully!', 'information', False)
+
+            applicantNewAccountWindow.getApplicantID(applicantID)
+            self.close()
+            applicantDashboardWindow.previousApplications()
+            applicantDashboardWindow.show()
+
+    def cancel(self):
+        if messageBox('Confirmation', 'Are you sure you wish to cancel your application? \n'
+                                      'Data will not be saved.',
+                      'question', True) == QtWidgets.QMessageBox.Ok:
+            self.close()
+            loginWindow.show()
+        else:
+            self.setFocus()
+
+
+class applicantNewAccountWindow(applicantNewAccount.Ui_MainWindow, QtWidgets.QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+        self.applicantID = None
+
+        # slots and signals
+        # buttons
+        self.btn_createAcc.clicked.connect(self.createAccount)
+        self.btn_cancel.clicked.connect(self.cancel)
+
+        # line edits
+        self.line_username.textChanged.connect(self.printUsername)
+        self.line_password.textChanged.connect(self.printPassword)
+
+        # validators
+        self.line_username.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[a-zA-Z0-9_]+")))
+
+    def getApplicantID(self, applicantID):
+        self.applicantID = applicantID
+
+    def printUsername(self):
+        self.line_username.setText(self.line_username.text())
+
+    def printPassword(self):
+        self.line_password.setText(self.line_password.text())
+
+    def createAccount(self):
+        applicantID = self.applicantID
+        username = self.line_username.text()
+        password = self.line_password.text()
+
+        # do duplicates check
+        if applicants.addNewApplicantAccount(username, password, applicantID):
+            messageBox('Success', 'Account created successfully!', 'information', False)
+            self.close()
+            loginWindow.show()
 
     def cancel(self):
         if messageBox('Confirmation', 'Are you sure you wish to cancel your application? \n'
@@ -1299,10 +1443,16 @@ if __name__ == '__main__':
 
     app = QApplication(sys.argv)
 
+    # login
     loginWindow = loginWindow()
+
+    # applicant
     applicantDashboardWindow = applicantDashboardWindow()
     applicantNewApplicationWindow = applicantNewApplicationWindow()
     applicantAnotherApplicationWindow = applicantAnotherApplicationWindow()
+    applicantNewAccountWindow = applicantNewAccountWindow()
+
+    # manager
     managerDashboardWindow = managerDashboardWindow()
     managerApplicantLogWindow = managerApplicantLogWindow()
     managerTeamMembersWindow = managerTeamMembersWindow()
@@ -1313,6 +1463,8 @@ if __name__ == '__main__':
     managerAddNewDLeaderWindow = managerAddNewDLeaderWindow()
     managerDLeaderProfileWindow = managerDLeaderProfileWindow()
     managerEditDLeaderProfileWindow = managerEditDLeaderProfileWindow()
+
+    # admin
     adminManagerProfilesWindow = adminManagerProfilesWindow()
     adminRegisterManagerWindow = adminRegisterManagerWindow()
 
