@@ -666,11 +666,16 @@ class managerDashboardWindow(managerDashboard.Ui_MainWindow, QtWidgets.QMainWind
             with open('updateLog.txt', 'r') as logFile:
                 updates = logFile.readlines()
 
+            # sort updates by timestamp (most recent first)
+            updates = sorted(updates, key=lambda x: datetime.strptime(x.split(' - ')[0], '%Y-%m-%d %H:%M:%S,%f'),
+                             reverse=True)
+
             # display updates in table view
             model = QtGui.QStandardItemModel()
             model.setHorizontalHeaderLabels(['Update Timestamp', 'Action'])
 
-            for update in updates:
+            # only shows the first 10 most recent updates
+            for update in updates[:10]:
                 # splitting timestamp and update text / handling fractional seconds by splitting on the comma
                 strTimestamp, textUpdate = update.split(' - ', 1)
                 strTimestamp, fractionalSeconds = strTimestamp.split(',', 1)
@@ -1090,6 +1095,7 @@ class managerEditMemberProfileWindow(managerEditMemberProfile.Ui_MainWindow, QtW
             managerDashboardWindow.showUpdates()
 
             managerTeamMembersWindow.teamMembers()
+            managerDashboardWindow.showMemberStats()
 
             self.line_mobileNumber.clear()
             self.line_email.clear()
@@ -1543,24 +1549,40 @@ class adminUpdateLogWindow(adminUpdateLog.Ui_MainWindow, QtWidgets.QMainWindow):
         # slots and signals
 
         # buttons
-        # self.combo_sort.currentIndexChanged.connect(self.sortUpdates)
+        self.combo_sort.currentIndexChanged.connect(self.showUpdates)
+        self.combo_filterAction.currentIndexChanged.connect(self.searchAndFilter)
         self.btn_backToDashboard.clicked.connect(self.backToDashboard)
 
         # line edits
-        # self.ln_searchBar.textChanged.connect(self.searchUpdates)
+        self.ln_searchBar.textChanged.connect(self.searchAndFilter)
 
         self.showUpdates()
 
-    def showUpdates(self):
+    def showUpdates(self, keyword=None, filterAct=None):
         try:
             with open('updateLog.txt', 'r') as logFile:
                 updates = logFile.readlines()
+
+            if self.combo_sort.currentText() == 'Most Recent Updates':
+                # sort updates by timestamp (most recent first)
+                updates = sorted(updates, key=lambda x: datetime.strptime(x.split(' - ')[0], '%Y-%m-%d %H:%M:%S,%f'),
+                                 reverse=True)
+            elif self.combo_sort.currentText() == 'Oldest Updates':
+                # sort updates by timestamp (oldest first)
+                updates = sorted(updates, key=lambda x: datetime.strptime(x.split(' - ')[0], '%Y-%m-%d %H:%M:%S,%f'))
 
             # display updates in table view
             model = QtGui.QStandardItemModel()
             model.setHorizontalHeaderLabels(['Update Timestamp', 'Action'])
 
             for update in updates:
+                # check if keyword is in update
+                if keyword and keyword.lower() not in update.lower():
+                    continue
+
+                if filterAct and filterAct.lower() not in update.lower():
+                    continue
+
                 # splitting timestamp and update text / handling fractional seconds by splitting on the comma
                 strTimestamp, textUpdate = update.split(' - ', 1)
                 strTimestamp, fractionalSeconds = strTimestamp.split(',', 1)
@@ -1582,6 +1604,15 @@ class adminUpdateLogWindow(adminUpdateLog.Ui_MainWindow, QtWidgets.QMainWindow):
             self.tbl_updateLog.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
         except Exception as e:
             print(f'An error has occurred in updating logs: {e}')
+
+    def searchAndFilter(self):
+        keyword = self.ln_searchBar.text()
+        filterAct = self.combo_filterAction.currentText()
+
+        if filterAct == 'No Filter':
+            filterAct = None
+
+        self.showUpdates(keyword, filterAct)
 
     def logUpdate(self, update):
         logging.info(update)
