@@ -15,7 +15,8 @@ from classes.tableModel import *
 from ui import (login, applicantDashboard, applicantNewApplication, applicantAnotherApplication, applicantNewAccount,
                 managerDashboard, managerApplicationView, managerApplicantLog, managerTeamMembers, managerMemberProfile,
                 managerAddNewMember, managerEditMemberProfile, adminManagerProfiles, adminRegisterManager,
-                managerDLeaderInfoBank, managerAddNewDLeader, managerDLeaderProfile, managerEditDLeaderProfile)
+                managerDLeaderInfoBank, managerAddNewDLeader, managerDLeaderProfile, managerEditDLeaderProfile,
+                adminUpdateLog)
 
 
 def verifyUsername(username):
@@ -352,6 +353,11 @@ class applicantNewApplicationWindow(applicantNewApplication.Ui_MainWindow, QtWid
                                              responseMinistryToSalvation, applicationDate, applicantID, teamIndex)
                 messageBox('Success', 'Application submitted successfully!', 'information', False)
 
+                updateDetails = f'NEW APPLICATION SUBMITTED. | Application ID: {applicantID} - Team: {team}'
+                adminUpdateLogWindow.logUpdate(updateDetails)
+                adminUpdateLogWindow.showUpdates()
+                managerDashboardWindow.showUpdates()
+
                 applicantNewAccountWindow.getApplicantID(applicantID)
                 self.close()
                 applicantNewAccountWindow.show()
@@ -442,7 +448,11 @@ class applicantAnotherApplicationWindow(applicantAnotherApplication.Ui_MainWindo
                                          responseMinistryToSalvation, applicationDate, applicantID, teamIndex)
             messageBox('Success', 'Application submitted successfully!', 'information', False)
 
-            applicantNewAccountWindow.getApplicantID(applicantID)
+            updateDetails = f'NEW APPLICATION SUBMITTED. | Application ID: {applicantID} - Team: {team}'
+            adminUpdateLogWindow.logUpdate(updateDetails)
+            adminUpdateLogWindow.showUpdates()
+            managerDashboardWindow.showUpdates()
+
             self.close()
             applicantDashboardWindow.previousApplications()
             applicantDashboardWindow.show()
@@ -466,6 +476,7 @@ class applicantNewAccountWindow(applicantNewAccount.Ui_MainWindow, QtWidgets.QMa
         # slots and signals
         # buttons
         self.btn_createAcc.clicked.connect(self.createAccount)
+        self.check_showPass.clicked.connect(self.showPass)
         self.btn_cancel.clicked.connect(self.cancel)
 
         # line edits
@@ -484,16 +495,30 @@ class applicantNewAccountWindow(applicantNewAccount.Ui_MainWindow, QtWidgets.QMa
     def printPassword(self):
         self.line_password.setText(self.line_password.text())
 
+    def showPass(self):
+        if self.check_showPass.isChecked():
+            self.line_password.setEchoMode(QtWidgets.QLineEdit.Normal)
+            self.line_confirmPassword.setEchoMode(QtWidgets.QLineEdit.Normal)
+        elif not self.check_showPass.isChecked():
+            self.line_password.setEchoMode(QtWidgets.QLineEdit.Password)
+            self.line_confirmPassword.setEchoMode(QtWidgets.QLineEdit.Password)
+
     def createAccount(self):
         applicantID = self.applicantID
         username = self.line_username.text()
         password = self.line_password.text()
 
         # do duplicates check
-        if applicants.addNewApplicantAccount(username, password, applicantID):
-            messageBox('Success', 'Account created successfully!', 'information', False)
-            self.close()
-            loginWindow.show()
+        applicants.addNewApplicantAccount(username, password, applicantID)
+        messageBox('Success', 'Account created successfully!', 'information', False)
+
+        updateDetails = f'APPLICANT ACCOUNT CREATED. | Applicant ID: {applicantID} - Username: [{username}]'
+        adminUpdateLogWindow.logUpdate(updateDetails)
+        adminUpdateLogWindow.showUpdates()
+        managerDashboardWindow.showUpdates()
+
+        self.close()
+        loginWindow.show()
 
     def cancel(self):
         if messageBox('Confirmation', 'Are you sure you wish to cancel your application? \n'
@@ -522,6 +547,7 @@ class managerDashboardWindow(managerDashboard.Ui_MainWindow, QtWidgets.QMainWind
         self.btn_applicantLog.clicked.connect(self.applicantLog)
         self.btn_teamMembers.clicked.connect(self.teamMembers)
         self.btn_dLeaderInfoBank.clicked.connect(self.dLeaderInfoBank)
+        self.btn_adminAudits.clicked.connect(self.adminAudits)
         self.btn_adminManagerProfile.clicked.connect(self.adminManagerProfiles)
         self.tbl_pendingApplications.doubleClicked.connect(self.openApplication)
         self.btn_logout.clicked.connect(self.logout)
@@ -551,6 +577,10 @@ class managerDashboardWindow(managerDashboard.Ui_MainWindow, QtWidgets.QMainWind
     def adminManagerProfiles(self):
         adminManagerProfilesWindow.show()
         adminManagerProfilesWindow.setFocus()
+
+    def adminAudits(self):
+        adminUpdateLogWindow.show()
+        adminUpdateLogWindow.setFocus()
 
     def pendingApplications(self, keyword=None):
         header = ['Application ID', 'Applicant Name', 'Date of Application', 'Team']
@@ -706,6 +736,11 @@ class managerApplicationViewWindow(managerApplicationView.Ui_MainWindow, QtWidge
             managers.addNewMember(firstName, lastName, applicantDOB, mobileNumber, teamID, applicantEmail, dleaderIndex)
             messageBox('Success', f'{applicantName} has been approved.', 'information')
 
+            updateDetails = f'APPLICATION APPROVED. | Application ID: {applicationID} - Applicant Name: {applicantName}'
+            adminUpdateLogWindow.logUpdate(updateDetails)
+            adminUpdateLogWindow.showUpdates()
+            managerDashboardWindow.showUpdates()
+
             managerApplicationViewWindow.close()
             managerDashboardWindow.pendingApplications()
             managerDashboardWindow.show()
@@ -735,6 +770,11 @@ class managerApplicationViewWindow(managerApplicationView.Ui_MainWindow, QtWidge
                       True) == QtWidgets.QMessageBox.Ok:
             managers.modifyApplicationStatus(applicationID, status)
             messageBox('Success', f'{applicantName} has been rejected.', 'information')
+
+            updateDetails = f'APPLICATION REJECTED. | Application ID: {applicationID} - Applicant Name: {applicantName}'
+            adminUpdateLogWindow.logUpdate(updateDetails)
+            adminUpdateLogWindow.showUpdates()
+            managerDashboardWindow.showUpdates()
 
             managerApplicationViewWindow.close()
             managerDashboardWindow.pendingApplications()
@@ -800,15 +840,20 @@ class managerApplicantLogWindow(managerApplicantLog.Ui_MainWindow, QtWidgets.QMa
         selectedApplicantIndex = self.tbl_applicantLog.selectionModel().currentIndex()
 
         if selectedApplicantIndex.isValid():
-            applicationID = self.pendingApplicationsTable.data(
+            applicantID = self.pendingApplicationsTable.data(
                 self.pendingApplicationsTable.index(selectedApplicantIndex.row(), 0), QtCore.Qt.DisplayRole)
             applicantName = self.pendingApplicationsTable.data(
                 self.pendingApplicationsTable.index(selectedApplicantIndex.row(), 1), QtCore.Qt.DisplayRole)
             if messageBox('Confirmation', f'Are you sure you want to delete [{applicantName}]? \n'
                                           f'This action cannot be undone.', 'question',
                           True) == QtWidgets.QMessageBox.Ok:
-                managers.removeApplicant(applicationID)
+                managers.removeApplicant(applicantID)
                 messageBox('Success', f'{applicantName} has been removed.', 'information')
+
+                updateDetails = f'APPLICANT DELETED. | Applicant ID: {applicantID} - Applicant Name: {applicantName}'
+                adminUpdateLogWindow.logUpdate(updateDetails)
+                adminUpdateLogWindow.showUpdates()
+                managerDashboardWindow.showUpdates()
 
                 managerApplicantLogWindow.applicantLog()
                 managerDashboardWindow.pendingApplications()
@@ -879,6 +924,11 @@ class managerTeamMembersWindow(managerTeamMembers.Ui_MainWindow, QtWidgets.QMain
                           True) == QtWidgets.QMessageBox.Ok:
                 managers.removeMember(memberID)
                 messageBox('Success', f'{memberName} has been removed.', 'information')
+
+                updateDetails = f'MEMBER DELETED. | Member ID: {memberID} - Member Name: {memberName}'
+                adminUpdateLogWindow.logUpdate(updateDetails)
+                adminUpdateLogWindow.showUpdates()
+                managerDashboardWindow.showUpdates()
 
                 self.teamMembers()
                 managerDashboardWindow.showMemberStats()
@@ -1034,6 +1084,11 @@ class managerEditMemberProfileWindow(managerEditMemberProfile.Ui_MainWindow, QtW
             managers.editMemberProfile(teamIndex, dleaderIndex, dob, mobileNumber, email, member)
             messageBox('Success!', 'Changes saved successfully!', 'information', False)
 
+            updateDetails = f'MEMBER PROFILE EDITED. | Member ID: [{member}]'
+            adminUpdateLogWindow.logUpdate(updateDetails)
+            adminUpdateLogWindow.showUpdates()
+            managerDashboardWindow.showUpdates()
+
             managerTeamMembersWindow.teamMembers()
 
             self.line_mobileNumber.clear()
@@ -1136,6 +1191,11 @@ class managerAddNewMemberWindow(managerAddNewMember.Ui_MainWindow, QtWidgets.QMa
                 managers.addNewMember(firstName, surname, dob, mobileNumber, teamIndex, email, dleaderIndex)
                 messageBox('Success', 'Member successfully registered!', 'information', False)
 
+                updateDetails = f'NEW MEMBER ADDED. | Member Name: {firstName} {surname}'
+                adminUpdateLogWindow.logUpdate(updateDetails)
+                adminUpdateLogWindow.showUpdates()
+                managerDashboardWindow.showUpdates()
+
                 managerTeamMembersWindow.show()
                 managerTeamMembersWindow.teamMembers()
                 managerDashboardWindow.showMemberStats()
@@ -1231,6 +1291,11 @@ class managerDLeaderInfoBankWindow(managerDLeaderInfoBank.Ui_MainWindow, QtWidge
                           True) == QtWidgets.QMessageBox.Ok:
                 managers.removeDLeader(dleaderID)
                 messageBox('Success', f'{dleaderName} has been removed.', 'information')
+
+                updateDetails = f'DLEADER DELETED. | DLeader ID: {dleaderID} - DLeader Name: {dleaderName}'
+                adminUpdateLogWindow.logUpdate(updateDetails)
+                adminUpdateLogWindow.showUpdates()
+                managerDashboardWindow.showUpdates()
 
                 managerDLeaderInfoBankWindow.dLeaderInfoBank()
             else:
@@ -1378,6 +1443,11 @@ class managerAddNewDLeaderWindow(managerAddNewDLeader.Ui_MainWindow, QtWidgets.Q
                 managers.addNewDLeader(firstName, surname, mobileNumber, email)
                 messageBox('Success', 'DLeader successfully registered!', 'information', False)
 
+                updateDetails = f'NEW DLEADER ADDED. | DLeader Name: {firstName} {surname}'
+                adminUpdateLogWindow.logUpdate(updateDetails)
+                adminUpdateLogWindow.showUpdates()
+                managerDashboardWindow.showUpdates()
+
                 self.line_firstName.clear()
                 self.line_surname.clear()
                 self.line_mobileNumber.clear()
@@ -1440,6 +1510,12 @@ class managerEditDLeaderProfileWindow(managerEditDLeaderProfile.Ui_MainWindow, Q
                       True) == QtWidgets.QMessageBox.Ok:
             managers.editDLeaderProfile(mobileNumber, email, dleader)
             messageBox('Success!', 'Changes saved successfully!', 'information', False)
+
+            updateDetails = f'DLEADER PROFILE EDITED. | DLeader ID: [{dleader}]'
+            adminUpdateLogWindow.logUpdate(updateDetails)
+            adminUpdateLogWindow.showUpdates()
+            managerDashboardWindow.showUpdates()
+
             self.line_mobileNumber.clear()
             self.line_email.clear()
             self.close()
@@ -1453,6 +1529,67 @@ class managerEditDLeaderProfileWindow(managerEditDLeaderProfile.Ui_MainWindow, Q
             managerDLeaderInfoBankWindow.setFocus()
         else:
             self.setFocus()
+
+
+class adminUpdateLogWindow(adminUpdateLog.Ui_MainWindow, QtWidgets.QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+
+        self.tbl_updateLog.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+
+        logging.basicConfig(filename='updateLog.txt', level=logging.INFO, format='%(asctime)s,%(message)s')
+
+        # slots and signals
+
+        # buttons
+        # self.combo_sort.currentIndexChanged.connect(self.sortUpdates)
+        self.btn_backToDashboard.clicked.connect(self.backToDashboard)
+
+        # line edits
+        # self.ln_searchBar.textChanged.connect(self.searchUpdates)
+
+        self.showUpdates()
+
+    def showUpdates(self):
+        try:
+            with open('updateLog.txt', 'r') as logFile:
+                updates = logFile.readlines()
+
+            # display updates in table view
+            model = QtGui.QStandardItemModel()
+            model.setHorizontalHeaderLabels(['Update Timestamp', 'Action'])
+
+            for update in updates:
+                # splitting timestamp and update text / handling fractional seconds by splitting on the comma
+                strTimestamp, textUpdate = update.split(' - ', 1)
+                strTimestamp, fractionalSeconds = strTimestamp.split(',', 1)
+
+                # parse timestamp, including fractional seconds
+                dateTimeTimestamp = (datetime.strptime(strTimestamp, '%Y-%m-%d %H:%M:%S') +
+                                     timedelta(microseconds = int(fractionalSeconds)*1000))
+
+                # format timestamp for display
+                formattedTimestamp = dateTimeTimestamp.strftime('%Y-%m-%d %H:%M:%S')
+
+                # create items for the table & append to model
+                timestampItem = QtGui.QStandardItem(formattedTimestamp)
+                detailsItem = QtGui.QStandardItem(textUpdate.strip())
+                model.appendRow([timestampItem, detailsItem])
+
+            self.tbl_updateLog.setModel(model)
+            self.tbl_updateLog.horizontalHeader().resizeSections(QtWidgets.QHeaderView.ResizeToContents)
+            self.tbl_updateLog.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        except Exception as e:
+            print(f'An error has occurred in updating logs: {e}')
+
+    def logUpdate(self, update):
+        logging.info(update)
+
+    def backToDashboard(self):
+        managerDashboardWindow.show()
+        self.close()
+        managerDashboardWindow.setFocus()
 
 
 class adminManagerProfilesWindow(adminManagerProfiles.Ui_MainWindow, QtWidgets.QMainWindow):
@@ -1503,6 +1640,11 @@ class adminManagerProfilesWindow(adminManagerProfiles.Ui_MainWindow, QtWidgets.Q
                           True) == QtWidgets.QMessageBox.Ok:
                 administrators.removeManager(managerID)
                 messageBox('Success', f'{managerName} has been removed.', 'information')
+
+                updateDetails = f'MANAGER DELETED. | Manager ID: {managerID} - Manager Name: {managerName}'
+                adminUpdateLogWindow.logUpdate(updateDetails)
+                adminUpdateLogWindow.showUpdates()
+                managerDashboardWindow.showUpdates()
 
                 adminManagerProfilesWindow.managerProfiles()
             else:
@@ -1581,6 +1723,11 @@ class adminRegisterManagerWindow(adminRegisterManager.Ui_MainWindow, QtWidgets.Q
                 administrators.add(firstName, surname, username, password, permissionLevel)
                 messageBox('Success', 'Manager successfully registered!', 'information', False)
 
+                updateDetails = f'NEW MANAGER ADDED. | Manager Name: {firstName} {surname}'
+                adminUpdateLogWindow.logUpdate(updateDetails)
+                adminUpdateLogWindow.showUpdates()
+                managerDashboardWindow.showUpdates()
+
                 self.line_firstName.clear()
                 self.line_surname.clear()
                 self.line_username.clear()
@@ -1634,6 +1781,7 @@ if __name__ == '__main__':
     managerEditDLeaderProfileWindow = managerEditDLeaderProfileWindow()
 
     # admin
+    adminUpdateLogWindow = adminUpdateLogWindow()
     adminManagerProfilesWindow = adminManagerProfilesWindow()
     adminRegisterManagerWindow = adminRegisterManagerWindow()
 

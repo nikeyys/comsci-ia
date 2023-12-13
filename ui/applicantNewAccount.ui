@@ -121,12 +121,16 @@
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="line_confirmPassword"/>
+        <widget class="QLineEdit" name="line_confirmPassword">
+         <property name="echoMode">
+          <enum>QLineEdit::Password</enum>
+         </property>
+        </widget>
        </item>
       </layout>
      </item>
      <item>
-      <widget class="QCheckBox" name="checkbox_showPassword">
+      <widget class="QCheckBox" name="check_showPass">
        <property name="text">
         <string>Show Password</string>
        </property>
