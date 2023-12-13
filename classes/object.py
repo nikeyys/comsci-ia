@@ -60,7 +60,7 @@ class applicants:
                 applicantID = row[1]
                 dleaderName = row[2] if row[2] != ", " else 'No DLeader assigned.'
                 applicantMobileNumber = row[3]
-                applicantEmail = row[4] if row[4] is not None else 'No email provided.'
+                applicantEmail = row[4]
                 applicantDOB = row[5]
                 return applicantName, applicantID, dleaderName, applicantMobileNumber, applicantEmail, applicantDOB
             else:
@@ -135,6 +135,66 @@ class managers:
             return cursor.fetchall()
 
     @staticmethod
+    def fetchApplicationDetails(application):
+        with ConnectionPool() as cursor:
+            cursor.execute('''
+            SELECT CONCAT(applicant."applicantFirstName", ' ', applicant."applicantSurname") 
+            AS "applicantName", applicant."applicantMobileNumber", applicant."applicantEmail", 
+            applicant."applicantOccupation", applicant."applicantEmployer", team."teamName", 
+            CONCAT(dleader."dleaderFirstName", ' ', dleader."dleaderSurname") AS "dleaderName", "whenJesusLord", 
+            "howJesusLord", "loseSalvation", "ministryToSalvation", "applicationDate" 
+            FROM application
+            LEFT JOIN applicant ON application."applicantID" = applicant."applicantID"
+            INNER JOIN team ON application."teamID" = team."teamID"
+            LEFT JOIN dleader ON applicant."dleaderID" = dleader."dleaderID"
+            WHERE "applicationID" = %s''', (application,))
+            row = cursor.fetchone()
+        if row is not None:
+            applicantName = row[0]
+            applicantMobileNumber = row[1]
+            applicantEmail = row[2]
+            applicantOccupation = row[3]
+            applicantEmployer = row[4]
+            teamName = row[5]
+            dleaderName = row[6] if row[6] != " " else 'No DLeader assigned.'
+            whenJesusLord = row[7]
+            howJesusLord = row[8]
+            loseSalvation = row[9]
+            ministryToSalvation = row[10]
+            applicationDate = row[11]
+            return (applicantName, applicantMobileNumber, applicantEmail, applicantOccupation, applicantEmployer,
+                    teamName, dleaderName, whenJesusLord, howJesusLord, loseSalvation, ministryToSalvation,
+                    applicationDate)
+
+    @staticmethod
+    def fetchApplicantDetails(application):
+        with ConnectionPool() as cursor:
+            cursor.execute('''
+            SELECT "applicantFirstName", "applicantSurname", "applicantDOB", "applicantMobileNumber", "applicantEmail",
+            team."teamID", "dleaderID"
+            FROM applicant
+            INNER JOIN application ON applicant."applicantID" = application."applicantID"
+            INNER JOIN team ON application."teamID" = team."teamID"
+            WHERE "applicationID" = %s''', (application,))
+            row = cursor.fetchone()
+        if row is not None:
+            applicantFirstName = row[0]
+            applicantSurname = row[1]
+            applicantDOB = row[2]
+            applicantMobileNumber = row[3]
+            applicantEmail = row[4]
+            teamID = row[5]
+            dleaderID = row[6] if row[6] is not None else None
+            return (applicantFirstName, applicantSurname, applicantDOB, applicantMobileNumber, teamID, applicantEmail,
+                    dleaderID)
+
+    @staticmethod
+    def modifyApplicationStatus(application, status):
+        with ConnectionPool() as cursor:
+            cursor.execute('''UPDATE application SET "applicationStatus" = %s WHERE "applicationID" = %s''',
+                           (status, application))
+
+    @staticmethod
     def getApplicants(keyword=None):
         with ConnectionPool() as cursor:
             cursor.execute('''
@@ -179,7 +239,7 @@ class managers:
             cursor.execute('''
             INSERT INTO member("memberFirstName", "memberSurname", "memberDOB", "memberMobileNumber", "teamID", 
             "memberEmail", "dleaderID") 
-            VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)''', (firstName, lastName, dob, mobileNumber, team, email, dleaderIndex))
+            VALUES(%s,%s,%s,%s,%s,%s,%s)''', (firstName, lastName, dob, mobileNumber, team, email, dleaderIndex))
 
     @staticmethod
     def fetchManagerDetails(user):

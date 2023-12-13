@@ -1,6 +1,8 @@
+import logging
 import random
 import re  # regex
 import sys
+from datetime import timedelta
 
 from PyQt5.QtChart import QChart, QBarSeries, QBarSet, QBarCategoryAxis, QChartView
 from PyQt5.QtCore import QDateTime
@@ -11,9 +13,9 @@ from classes.object import *
 from classes.sendEmail import *
 from classes.tableModel import *
 from ui import (login, applicantDashboard, applicantNewApplication, applicantAnotherApplication, applicantNewAccount,
-                managerDashboard, managerApplicantLog, managerTeamMembers, managerMemberProfile, managerAddNewMember,
-                managerEditMemberProfile, adminManagerProfiles, adminRegisterManager, managerDLeaderInfoBank,
-                managerAddNewDLeader, managerDLeaderProfile, managerEditDLeaderProfile)
+                managerDashboard, managerApplicationView, managerApplicantLog, managerTeamMembers, managerMemberProfile,
+                managerAddNewMember, managerEditMemberProfile, adminManagerProfiles, adminRegisterManager,
+                managerDLeaderInfoBank, managerAddNewDLeader, managerDLeaderProfile, managerEditDLeaderProfile)
 
 
 def verifyUsername(username):
@@ -94,12 +96,12 @@ class loginWindow(login.Ui_MainWindow, QtWidgets.QMainWindow):
             if result:
                 applicantName, applicantID, dleaderName, applicantMobileNumber, applicantEmail, applicantDOB = result
 
-            applicantDashboardWindow.label_applicantName.setText(f'{applicantName}')
-            applicantDashboardWindow.label_applicantID.setText(f'Applicant ID: {applicantID}')
-            applicantDashboardWindow.label_dLeader.setText(f'Discipleship Leader: {dleaderName}')
-            applicantDashboardWindow.label_mobileNumber.setText(f'Mobile Number: {applicantMobileNumber}')
-            applicantDashboardWindow.label_emailAddress.setText(f'Email Address: {applicantEmail}')
-            applicantDashboardWindow.label_dob.setText(f'Date of Birth: {applicantDOB}')
+            applicantDashboardWindow.lbl_applicantName.setText(f'{applicantName}')
+            applicantDashboardWindow.lbl_applicantID_filler.setText(f'{applicantID}')
+            applicantDashboardWindow.lbl_dleader_filler.setText(f'{dleaderName}')
+            applicantDashboardWindow.lbl_mobileNumber_filler.setText(f'{applicantMobileNumber}')
+            applicantDashboardWindow.lbl_email_filler.setText(f'{applicantEmail}')
+            applicantDashboardWindow.lbl_dob_filler.setText(f'{applicantDOB}')
 
             self.close()
             applicantDashboardWindow.show()
@@ -200,6 +202,8 @@ class applicantDashboardWindow(applicantDashboard.Ui_MainWindow, QtWidgets.QMain
         self.btn_newApplication.clicked.connect(self.newApplication)
 
     def previousApplications(self):
+        applicantID = self.lbl_applicantID_filler.text()
+
         header = ['Application ID', 'Date', 'Team', 'Status']
         data = applicants.getPreviousApplications()
         self.previousApplicationsTable = tableModel(self, data, header)
@@ -211,10 +215,7 @@ class applicantDashboardWindow(applicantDashboard.Ui_MainWindow, QtWidgets.QMain
         self.tbl_prevApplications.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.Stretch)
 
     def newApplication(self):
-        applicantIDText = self.label_applicantID.text()
-        colonIndex = applicantIDText.find(':')
-        applicantIDPart = applicantIDText[colonIndex + 1:].strip()
-        applicantID = int(applicantIDPart)
+        applicantID = self.lbl_applicantID_filler.text()
 
         applicantAnotherApplicationWindow.getApplicantID(applicantID)
         applicantAnotherApplicationWindow.show()
@@ -343,8 +344,8 @@ class applicantNewApplicationWindow(applicantNewApplication.Ui_MainWindow, QtWid
         if duplicateCheck is True:
             messageBox('Error', 'Applicant already exists!', 'critical', False)
         else:
-            if (firstName and surname and mobileNumber and dob and responseWhenJesusLord and responseHowJesusLord and
-                    responseLoseSalvation and responseMinistryToSalvation) != '':
+            if (firstName and surname and mobileNumber and email and dob and responseWhenJesusLord and
+                    responseHowJesusLord and responseLoseSalvation and responseMinistryToSalvation) != '':
                 applicantID = applicants.addNewApplicantProfile(firstName, surname, mobileNumber, email, dob, dleader,
                                                                 occupation, employer)
                 applicants.addNewApplication(responseWhenJesusLord, responseHowJesusLord, responseLoseSalvation,
@@ -510,6 +511,10 @@ class managerDashboardWindow(managerDashboard.Ui_MainWindow, QtWidgets.QMainWind
         self.setupUi(self)
 
         self.tbl_pendingApplications.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.tbl_latestUpdates.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+
+        # setup log file
+        logging.basicConfig(filename='updateLog.txt', level=logging.INFO, format='%(asctime)s - %(message)s')
 
         # slots and signals
 
@@ -518,6 +523,7 @@ class managerDashboardWindow(managerDashboard.Ui_MainWindow, QtWidgets.QMainWind
         self.btn_teamMembers.clicked.connect(self.teamMembers)
         self.btn_dLeaderInfoBank.clicked.connect(self.dLeaderInfoBank)
         self.btn_adminManagerProfile.clicked.connect(self.adminManagerProfiles)
+        self.tbl_pendingApplications.doubleClicked.connect(self.openApplication)
         self.btn_logout.clicked.connect(self.logout)
 
         # tables
@@ -528,6 +534,7 @@ class managerDashboardWindow(managerDashboard.Ui_MainWindow, QtWidgets.QMainWind
         # show tables
         self.showMemberStats()
         self.pendingApplications()
+        self.showUpdates()
 
     def applicantLog(self):
         managerApplicantLogWindow.show()
@@ -557,6 +564,41 @@ class managerDashboardWindow(managerDashboard.Ui_MainWindow, QtWidgets.QMainWind
         self.tbl_pendingApplications.horizontalHeader().resizeSections(QtWidgets.QHeaderView.ResizeToContents)
         self.tbl_pendingApplications.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
         self.tbl_pendingApplications.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.Stretch)
+
+    def openApplication(self):
+        selectedApplicationIndex = self.tbl_pendingApplications.selectionModel().currentIndex()
+
+        if selectedApplicationIndex.isValid():
+            application = self.pendingApplicationsTable.data(
+                self.pendingApplicationsTable.index(selectedApplicationIndex.row(), 0), QtCore.Qt.DisplayRole)
+            print(application)
+
+            # change UI details in application profile
+            result = managers.fetchApplicationDetails(application)
+            if result:
+                (applicantName, applicantMobileNumber, applicantEmail, applicantOccupation, applicantEmployer, team,
+                 dleader, responseWhenJesusLord, responseHowJesusLord, responseLoseSalvation,
+                 responseMinistryToSalvation, applicationDate) = result
+
+            managerApplicationViewWindow.lbl_name_filler.setText(f'{applicantName}')
+            managerApplicationViewWindow.lbl_mobileNumber_filler.setText(f'{applicantMobileNumber}')
+            managerApplicationViewWindow.lbl_email_filler.setText(f'{applicantEmail}')
+            managerApplicationViewWindow.lbl_occupation_filler.setText(f'{applicantOccupation}')
+            managerApplicationViewWindow.lbl_employer_filler.setText(f'{applicantEmployer}')
+            managerApplicationViewWindow.lbl_team_filler.setText(f'{team}')
+            managerApplicationViewWindow.lbl_dleader_filler.setText(f'{dleader}')
+
+            managerApplicationViewWindow.text_whenJesusLord.setText(f'{responseWhenJesusLord}')
+            managerApplicationViewWindow.text_howJesusLord.setText(f'{responseHowJesusLord}')
+            managerApplicationViewWindow.text_loseSalvation.setText(f'{responseLoseSalvation}')
+            managerApplicationViewWindow.text_ministryToSalvation.setText(f'{responseMinistryToSalvation}')
+
+            managerApplicationViewWindow.lbl_applicationID_filler.setText(f'{application}')
+            managerApplicationViewWindow.lbl_dateSubmitted_filler.setText(f'{applicationDate}')
+
+            managerApplicationViewWindow.setWindowTitle(f'{applicantName}')
+
+            managerApplicationViewWindow.show()
 
     def showMemberStats(self):
         teams, memberCounts = managers.getMemberStats()
@@ -588,12 +630,138 @@ class managerDashboardWindow(managerDashboard.Ui_MainWindow, QtWidgets.QMainWind
 
         self.chart_memberStats.show()
 
+    def showUpdates(self):
+        try:
+            # fetch updates from the log file
+            with open('updateLog.txt', 'r') as logFile:
+                updates = logFile.readlines()
+
+            # display updates in table view
+            model = QtGui.QStandardItemModel()
+            model.setHorizontalHeaderLabels(['Update Timestamp', 'Action'])
+
+            for update in updates:
+                # splitting timestamp and update text / handling fractional seconds by splitting on the comma
+                strTimestamp, textUpdate = update.split(' - ', 1)
+                strTimestamp, fractionalSeconds = strTimestamp.split(',', 1)
+
+                # parse timestamp, including fractional seconds
+                dateTimeTimestamp = (datetime.strptime(strTimestamp, '%Y-%m-%d %H:%M:%S') +
+                                     timedelta(microseconds = int(fractionalSeconds)*1000))
+
+                # format timestamp for display
+                formattedTimestamp = dateTimeTimestamp.strftime('%Y-%m-%d %H:%M:%S')
+
+                # create items for the table & append to model
+                timestampItem = QtGui.QStandardItem(formattedTimestamp)
+                detailsItem = QtGui.QStandardItem(textUpdate.strip())
+                model.appendRow([timestampItem, detailsItem])
+
+            self.tbl_latestUpdates.setModel(model)
+            self.tbl_latestUpdates.horizontalHeader().resizeSections(QtWidgets.QHeaderView.ResizeToContents)
+            self.tbl_latestUpdates.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        except Exception as e:
+            print(f'An error has occurred in updating logs: {e}')
+
+
     def logout(self):
         if messageBox('Confirmation', 'Are you sure you want to exit?', 'question', True) == QtWidgets.QMessageBox.Ok:
             self.close()
             loginWindow.show()
         else:
             self.setFocus()
+
+
+class managerApplicationViewWindow(managerApplicationView.Ui_MainWindow, QtWidgets.QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+
+        # slots and signals
+
+        # buttons
+        self.btn_accept.clicked.connect(self.acceptApplication)
+        self.btn_reject.clicked.connect(self.rejectApplication)
+        self.btn_close.clicked.connect(self.backToDashboard)
+
+    def acceptApplication(self):
+        applicationID = self.lbl_applicationID_filler.text()
+        applicantName = self.lbl_name_filler.text()
+        applicantEmail = self.lbl_email_filler.text()
+        team = self.lbl_team_filler.text()
+
+        result = managers.fetchApplicantDetails(applicationID)
+        if result:
+            firstName, lastName, dob, mobileNumber, teamID, applicantEmail, dleaderIndex = result
+
+        applicantDOB = dob.strftime("%Y-%m-%d")
+        print(result, applicantDOB)
+
+        status = "ACCEPTED"
+
+        if messageBox('Confirmation', f'Are you sure you want to approve [{applicantName}]? \n'
+                                      f'This action cannot be undone.', 'question',
+                      True) == QtWidgets.QMessageBox.Ok:
+            managers.modifyApplicationStatus(applicationID, status)
+            managers.addNewMember(firstName, lastName, applicantDOB, mobileNumber, teamID, applicantEmail, dleaderIndex)
+            messageBox('Success', f'{applicantName} has been approved.', 'information')
+
+            managerApplicationViewWindow.close()
+            managerDashboardWindow.pendingApplications()
+            managerDashboardWindow.show()
+            managerDashboardWindow.setFocus()
+
+            # send email to applicant
+            emailSubject = f'Application Approved'
+            emailBody = f'Dear {applicantName},\n\n' \
+                        f'Congratulations! Your application for {team} has been approved.\n\n' \
+                        f'Please contact Karen via email (isoceliese@tti.com.ph) for further instructions. ' \
+                        f'We hope to see you with us soon!\n\n' \
+                        f'Best regards,\n' \
+                        f'CCF Live Production Management Team'
+            self.sendEmail(applicantEmail, emailSubject, emailBody)
+        else:
+            self.setFocus()
+
+    def rejectApplication(self):
+        applicationID = self.lbl_applicationID_filler.text()
+        applicantName = self.lbl_name_filler.text()
+        applicantEmail = self.lbl_email_filler.text()
+        team = self.lbl_team_filler.text()
+        status = "REJECTED"
+
+        if messageBox('Confirmation', f'Are you sure you want to reject [{applicantName}]? \n'
+                                      f'This action cannot be undone.', 'question',
+                      True) == QtWidgets.QMessageBox.Ok:
+            managers.modifyApplicationStatus(applicationID, status)
+            messageBox('Success', f'{applicantName} has been rejected.', 'information')
+
+            managerApplicationViewWindow.close()
+            managerDashboardWindow.pendingApplications()
+            managerDashboardWindow.show()
+            managerDashboardWindow.setFocus()
+
+            # send email to applicant
+            emailSubject = f'Application Rejected'
+            emailBody = f'Dear {applicantName},\n\n' \
+                        f'We regret to inform you that your application for {team} has been rejected.\n' \
+                        f'You may use your applicant credentials to apply again in the future.\n\n' \
+                        f'Best regards,\n' \
+                        f'CCF Live Production Management Team'
+            self.sendEmail(applicantEmail, emailSubject, emailBody)
+        else:
+            self.setFocus()
+
+    def sendEmail(self, recipient, subject, message):
+        if sendEmailMsg(recipient, subject, message):
+            messageBox('Success', 'Email sent successfully!', 'information', False)
+        else:
+            messageBox('Error', 'Failed to send email.', 'critical', False)
+
+    def backToDashboard(self):
+        managerDashboardWindow.show()
+        self.close()
+        managerDashboardWindow.setFocus()
 
 
 class managerApplicantLogWindow(managerApplicantLog.Ui_MainWindow, QtWidgets.QMainWindow):
@@ -1454,6 +1622,7 @@ if __name__ == '__main__':
 
     # manager
     managerDashboardWindow = managerDashboardWindow()
+    managerApplicationViewWindow = managerApplicationViewWindow()
     managerApplicantLogWindow = managerApplicantLogWindow()
     managerTeamMembersWindow = managerTeamMembersWindow()
     managerAddNewMemberWindow = managerAddNewMemberWindow()

@@ -72,18 +72,6 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="btn_managerProfile">
-         <property name="font">
-          <font>
-           <pointsize>10</pointsize>
-          </font>
-         </property>
-         <property name="text">
-          <string>View Manager Profile</string>
-         </property>
-        </widget>
-       </item>
-       <item>
         <widget class="QPushButton" name="btn_teamMembers">
          <property name="font">
           <font>
