@@ -235,6 +235,8 @@ class applicantNewApplicationWindow(applicantNewApplication.Ui_MainWindow, QtWid
         super().__init__()
         self.setupUi(self)
 
+        self.populateDLeaderCombo()
+
         self.responseWhenJesusLord = None
         self.responseHowJesusLord = None
         self.responseLoseSalvation = None
@@ -310,6 +312,19 @@ class applicantNewApplicationWindow(applicantNewApplication.Ui_MainWindow, QtWid
     def printDob(self):
         self.date_dob.setDate(self.date_dob.date())
 
+    def populateDLeaderCombo(self):
+        self.combo_dleader.clear()
+
+        result = general.populateDLeaderCombo()
+
+        for row in result:
+            name = row[0]
+
+            if not self.combo_dleader.count():
+                self.combo_dleader.addItem('')
+
+            self.combo_dleader.addItem(str(name))
+
     def submitApplication(self):
         firstName = self.line_firstName.text()
         surname = self.line_surname.text()
@@ -317,7 +332,7 @@ class applicantNewApplicationWindow(applicantNewApplication.Ui_MainWindow, QtWid
         mobileNumber = self.line_mobileNumber.text()
         email = self.line_email.text()
         team = self.combo_teamSelect.currentText()
-        dleader = self.combo_dleader.currentText()
+        dleaderName = self.combo_dleader.currentText()
         occupation = self.line_occupation.text()
         employer = self.line_employer.text()
 
@@ -338,8 +353,10 @@ class applicantNewApplicationWindow(applicantNewApplication.Ui_MainWindow, QtWid
         if email == '':
             email = None
 
-        if dleader == '':
-            dleader = None
+        if dleaderName == '':
+            dleaderID = None
+        else:
+            dleaderID = general.getDLeaderID(dleaderName)
 
         duplicateCheck = applicants.getApplicants(firstName + surname)
         if duplicateCheck is True:
@@ -347,7 +364,7 @@ class applicantNewApplicationWindow(applicantNewApplication.Ui_MainWindow, QtWid
         else:
             if (firstName and surname and mobileNumber and email and dob and responseWhenJesusLord and
                     responseHowJesusLord and responseLoseSalvation and responseMinistryToSalvation) != '':
-                applicantID = applicants.addNewApplicantProfile(firstName, surname, mobileNumber, email, dob, dleader,
+                applicantID = applicants.addNewApplicantProfile(firstName, surname, mobileNumber, email, dob, dleaderID,
                                                                 occupation, employer)
                 applicants.addNewApplication(responseWhenJesusLord, responseHowJesusLord, responseLoseSalvation,
                                              responseMinistryToSalvation, applicationDate, applicantID, teamIndex)
@@ -1000,10 +1017,17 @@ class managerMemberProfileWindow(managerMemberProfile.Ui_MainWindow, QtWidgets.Q
         else:
             teamIndex = 0
 
+        if dleaderName == '':
+            dleaderName = None
+        else:
+            pass
+
+        managerEditMemberProfileWindow.populateDLeaderCombo()
+
         managerEditMemberProfileWindow.label_memberName.setText(f'{memberName}')
         managerEditMemberProfileWindow.label_memberID_filler.setText(f'{memberID}')
         managerEditMemberProfileWindow.combo_teamSelect.setCurrentIndex(teamIndex)
-        # dleader
+        managerEditMemberProfileWindow.combo_dLeader.setCurrentText(f'{dleaderName}')
         managerEditMemberProfileWindow.line_mobileNumber.setPlaceholderText(f'{memberMobileNumber}')
         managerEditMemberProfileWindow.date_dob.setDate(memberDOB)
         managerEditMemberProfileWindow.label_age_filler.setText(f'{memberAge}')
@@ -1059,11 +1083,24 @@ class managerEditMemberProfileWindow(managerEditMemberProfile.Ui_MainWindow, QtW
     def printDob(self):
         self.date_dob.setDate(self.date_dob.date())
 
+    def populateDLeaderCombo(self):
+        self.combo_dLeader.clear()
+
+        result = general.populateDLeaderCombo()
+
+        for row in result:
+            name = row[0]
+
+            if not self.combo_dLeader.count():
+                self.combo_dLeader.addItem('')
+
+            self.combo_dLeader.addItem(str(name))
+
     def saveChanges(self):
         member = self.label_memberID_filler.text()
 
         team = self.combo_teamSelect.currentText()
-        dleaderIndex = self.combo_dLeader.currentText()
+        dleaderName = self.combo_dLeader.currentText()
         dob = self.date_dob.text()
         mobileNumber = self.line_mobileNumber.text()
         email = self.line_email.text()
@@ -1078,15 +1115,17 @@ class managerEditMemberProfileWindow(managerEditMemberProfile.Ui_MainWindow, QtW
         else:
             teamIndex = None
 
-        if dleaderIndex == '':
-            dleaderIndex = None
+        if dleaderName == '':
+            dleaderID = None
+        else:
+            dleaderID = general.getDLeaderID(dleaderName)
 
         if email == '':
             email = None
 
         if messageBox('Confirmation', 'Are you sure you want to save changes?', 'question',
                       True) == QtWidgets.QMessageBox.Ok:
-            managers.editMemberProfile(teamIndex, dleaderIndex, dob, mobileNumber, email, member)
+            managers.editMemberProfile(teamIndex, dleaderID, dob, mobileNumber, email, member)
             messageBox('Success!', 'Changes saved successfully!', 'information', False)
 
             updateDetails = f'MEMBER PROFILE EDITED. | Member ID: [{member}]'
@@ -1116,6 +1155,8 @@ class managerAddNewMemberWindow(managerAddNewMember.Ui_MainWindow, QtWidgets.QMa
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+
+        self.populateDLeaderCombo()
 
         # slots and signals
 
@@ -1161,6 +1202,19 @@ class managerAddNewMemberWindow(managerAddNewMember.Ui_MainWindow, QtWidgets.QMa
     def printDob(self):
         self.date_dob.setDate(self.date_dob.date())
 
+    def populateDLeaderCombo(self):
+        self.combo_dLeader.clear()
+
+        result = general.populateDLeaderCombo()
+
+        for row in result:
+            name = row[0]
+
+            if not self.combo_dLeader.count():
+                self.combo_dLeader.addItem('')
+
+            self.combo_dLeader.addItem(str(name))
+
     def addMember(self):
         firstName = self.line_firstName.text()
         surname = self.line_surname.text()
@@ -1168,7 +1222,7 @@ class managerAddNewMemberWindow(managerAddNewMember.Ui_MainWindow, QtWidgets.QMa
         mobileNumber = self.line_mobileNumber.text()
         team = self.combo_teamSelect.currentText()
         email = self.line_email.text()
-        dleaderIndex = self.combo_dLeader.currentText()
+        dleaderName = self.combo_dLeader.currentText()
 
         if team != 'Select Option':
             if team == 'Camera & Graphics':
@@ -1183,8 +1237,10 @@ class managerAddNewMemberWindow(managerAddNewMember.Ui_MainWindow, QtWidgets.QMa
         if email == '':
             email = None
 
-        if dleaderIndex == '':
-            dleaderIndex = None
+        if dleaderName == '':
+            dleaderID = None
+        else:
+            dleaderID = general.getDLeaderID(dleaderName)
 
         if firstName and surname and dob and mobileNumber and teamIndex != '':
             checkDuplicateName = managers.getTeamMembers(firstName + surname)
@@ -1194,7 +1250,7 @@ class managerAddNewMemberWindow(managerAddNewMember.Ui_MainWindow, QtWidgets.QMa
                 self.setFocus()
             elif messageBox('Confirmation', 'Are you sure you want to register this member?', 'question', True) == \
                     QtWidgets.QMessageBox.Ok:
-                managers.addNewMember(firstName, surname, dob, mobileNumber, teamIndex, email, dleaderIndex)
+                managers.addNewMember(firstName, surname, dob, mobileNumber, teamIndex, email, dleaderID)
                 messageBox('Success', 'Member successfully registered!', 'information', False)
 
                 updateDetails = f'NEW MEMBER ADDED. | Member Name: {firstName} {surname}'
@@ -1320,6 +1376,8 @@ class managerDLeaderProfileWindow(managerDLeaderProfile.Ui_MainWindow, QtWidgets
         self.dleaderID = None
         self.dleaderEmail = self.label_email_filler.text()
 
+        self.populateMemberCombo()
+
         self.tbl_dMembers.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
 
         # slots and signals
@@ -1327,6 +1385,8 @@ class managerDLeaderProfileWindow(managerDLeaderProfile.Ui_MainWindow, QtWidgets
         # buttons
         self.btn_editProfile.clicked.connect(self.editProfile)
         self.btn_sendEmail.clicked.connect(self.sendEmail)
+        self.btn_addMember.clicked.connect(self.addMember)
+        self.btn_removeMember.clicked.connect(self.removeMember)
         self.btn_close.clicked.connect(self.cancel)
 
         # line edits
@@ -1349,6 +1409,68 @@ class managerDLeaderProfileWindow(managerDLeaderProfile.Ui_MainWindow, QtWidgets
         self.tbl_dMembers.horizontalHeader().resizeSections(QtWidgets.QHeaderView.ResizeToContents)
         self.tbl_dMembers.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
         self.tbl_dMembers.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
+
+    def populateMemberCombo(self):
+        self.combo_addMember.clear()
+
+        result = managers.populateMemberCombo()
+
+        for row in result:
+            name = row[0]
+
+            if not self.combo_addMember.count():
+                self.combo_addMember.addItem('')
+
+            self.combo_addMember.addItem(str(name))
+
+    def addMember(self):
+        member = self.combo_addMember.currentText()
+        memberID = managers.getMemberID(member)
+
+        if member != '':
+            if messageBox('Confirmation', f'Are you sure you want to add [{member}]?', 'question', True) == \
+                    QtWidgets.QMessageBox.Ok:
+                managers.addMemberToDLeader(memberID, self.dleaderID)
+                messageBox('Success', f'{member} has been added.', 'information', False)
+
+                updateDetails = f'MEMBER ADDED TO DLEADER. | Member ID: {memberID} - Member Name: {member}'
+                adminUpdateLogWindow.logUpdate(updateDetails)
+                adminUpdateLogWindow.showUpdates()
+                managerDashboardWindow.showUpdates()
+
+                self.combo_addMember.clear()
+
+                self.dMembers()
+                self.populateMemberCombo()
+            else:
+                self.setFocus()
+        else:
+            messageBox('Error', 'Please select a member to add!', 'critical', False)
+            self.setFocus()
+
+    def removeMember(self):
+        selectedMemberIndex = self.tbl_dMembers.selectionModel().currentIndex()
+
+        if selectedMemberIndex.isValid():
+            memberID = self.dMembersTable.data(
+                self.dMembersTable.index(selectedMemberIndex.row(), 0), QtCore.Qt.DisplayRole)
+            memberName = self.dMembersTable.data(
+                self.dMembersTable.index(selectedMemberIndex.row(), 1), QtCore.Qt.DisplayRole)
+            if messageBox('Confirmation', f'Are you sure you want to remove [{memberName}]? \n'
+                                          f'This action cannot be undone.', 'question',
+                          True) == QtWidgets.QMessageBox.Ok:
+                managers.removeMemberFromDLeader(memberID)
+                messageBox('Success', f'{memberName} has been removed.', 'information')
+
+                updateDetails = f'MEMBER REMOVED FROM DLEADER. | Member ID: {memberID} - Member Name: {memberName}'
+                adminUpdateLogWindow.logUpdate(updateDetails)
+                adminUpdateLogWindow.showUpdates()
+                managerDashboardWindow.showUpdates()
+
+                self.dMembers()
+                self.populateMemberCombo()
+            else:
+                self.setFocus()
 
     def editProfile(self):
         # change UI details in manager edit dleader profile

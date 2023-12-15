@@ -20,6 +20,23 @@ class general:
                     return False
 
     @staticmethod
+    def populateDLeaderCombo():
+        with ConnectionPool() as cursor:
+            cursor.execute('''
+            SELECT CONCAT("dleaderFirstName", ' ', "dleaderSurname") AS "dleaderName" 
+            FROM dleader
+            ORDER BY "dleaderName" ASC''', ())
+            return cursor.fetchall()
+
+    @staticmethod
+    def getDLeaderID(dleaderName):
+        with ConnectionPool() as cursor:
+            cursor.execute('''
+            SELECT "dleaderID" FROM dleader
+            WHERE CONCAT("dleaderFirstName", ' ', "dleaderSurname") = %s''', (dleaderName,))
+            return cursor.fetchone()[0]
+
+    @staticmethod
     def insertApplicantCredentials(user, passw):
         with ConnectionPool() as cursor:
             cursor.execute(
@@ -270,7 +287,7 @@ class managers:
             cursor.execute('''
             SELECT CONCAT(UPPER("memberSurname"), ', ', "memberFirstName") AS "memberName", member."memberID", 
             team."teamName", "memberDOB", ((CURRENT_DATE- "memberDOB")/365) AS "memberAge", "memberMobileNumber", 
-            "memberEmail", CONCAT("dleaderSurname", ', ', "dleaderFirstName") AS "dleaderName"
+            "memberEmail", CONCAT("dleaderFirstName", ' ', "dleaderSurname") AS "dleaderName"
             FROM member
             INNER JOIN team ON member."teamID" = team."teamID"
             LEFT JOIN dleader ON dleader."dleaderID" = member."dleaderID"
@@ -284,7 +301,7 @@ class managers:
             memberAge = row[4]
             memberMobileNumber = row[5]
             memberEmail = row[6] if row[6] is not None else 'No email provided.'
-            dleaderName = row[7] if row[7] != ", " else 'No DLeader assigned.'
+            dleaderName = row[7] if row[7] != " " else 'No DLeader assigned.'
             return memberName, memberID, teamName, memberDOB, memberAge, memberMobileNumber, memberEmail, dleaderName
 
     @staticmethod
@@ -353,6 +370,40 @@ class managers:
     def removeDLeader(dleaderID):
         with ConnectionPool() as cursor:
             cursor.execute('''DELETE FROM dleader WHERE "dleaderID" = %s''', (dleaderID,))
+
+    @staticmethod
+    def populateMemberCombo():
+        with ConnectionPool() as cursor:
+            cursor.execute('''
+            SELECT CONCAT("memberFirstName", ' ', "memberSurname") AS "memberName" 
+            FROM member
+            WHERE "dleaderID" IS NULL
+            ORDER BY "memberName" ASC
+            ''', ())
+            return cursor.fetchall()
+
+    @staticmethod
+    def getMemberID(memberName):
+        with ConnectionPool() as cursor:
+            cursor.execute('''
+            SELECT "memberID" FROM member
+            WHERE CONCAT("memberFirstName", ' ', "memberSurname") = %s''', (memberName,))
+
+    @staticmethod
+    def addMemberToDLeader(member, dleader):
+        with ConnectionPool() as cursor:
+            cursor.execute('''
+            UPDATE member 
+            SET "dleaderID" = %s 
+            WHERE "memberID" = %s''', (dleader, member))
+
+    @staticmethod
+    def removeMemberFromDLeader(member):
+        with ConnectionPool() as cursor:
+            cursor.execute('''
+            UPDATE member 
+            SET "dleaderID" = NULL 
+            WHERE "memberID" = %s''', (member,))
 
 
 class administrators:

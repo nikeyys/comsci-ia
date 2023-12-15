@@ -188,6 +188,16 @@
            </item>
            <item>
             <property name="text">
+             <string>Member Removed from DLeader</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Member Added to DLeader</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
              <string>Member Deleted</string>
             </property>
            </item>

@@ -421,7 +421,14 @@
             </widget>
            </item>
            <item>
-            <widget class="QComboBox" name="combo_dleader"/>
+            <widget class="QComboBox" name="combo_dleader">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
+             <property name="editable">
+              <bool>true</bool>
+             </property>
+            </widget>
            </item>
            <item>
             <widget class="QLabel" name="lbl_notApplicableDLeader">
