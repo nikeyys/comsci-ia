@@ -388,6 +388,7 @@ class managers:
             cursor.execute('''
             SELECT "memberID" FROM member
             WHERE CONCAT("memberFirstName", ' ', "memberSurname") = %s''', (memberName,))
+            return cursor.fetchone()
 
     @staticmethod
     def addMemberToDLeader(member, dleader):
